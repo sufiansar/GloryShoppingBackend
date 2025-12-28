@@ -1,0 +1,35 @@
+model Category {
+  id        String     @id @default(uuid())
+  name      String
+  slug      String     @unique
+  parentId  String?
+  parent    Category? @relation("CategoryTree", fields: [parentId], references: [id])
+  children  Category[]@relation("CategoryTree")
+  products  Product[]
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+}
+
+
+model Brand {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  logoUrl   String?
+  country   String?
+  products  Product[]
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+
+model Tag {
+  id        String    @id @default(uuid())
+  name      String
+  slug      String    @unique
+productId String
+product   Product   @relation(fields: [productId], references: [id])
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+}
+

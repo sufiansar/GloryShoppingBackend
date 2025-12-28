@@ -1,0 +1,35 @@
+
+model SkinConcern {
+  id       String @id @default(uuid())
+  name     String
+  products ProductSkinConcern[]
+}
+
+
+model ProductSkinConcern {
+  productId     String
+  skinConcernId String
+
+  product       Product     @relation(fields: [productId], references: [id])
+  skinConcern   SkinConcern @relation(fields: [skinConcernId], references: [id])
+
+  @@id([productId, skinConcernId])
+}
+
+
+model SkinType {
+  id       String @id @default(uuid())
+  name     String
+  products ProductSkinType[]
+}
+
+
+model ProductSkinType {
+  productId String
+  skinTypeId String
+
+  product   Product  @relation(fields: [productId], references: [id])
+  skinType  SkinType @relation(fields: [skinTypeId], references: [id])
+
+  @@id([productId, skinTypeId])
+}

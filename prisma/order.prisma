@@ -1,0 +1,34 @@
+model Order {
+  id        String @id @default(uuid())
+  userId    String
+  status    OrderStatus
+  total     Int
+
+  items     OrderItem[]
+  delivery  Delivery?
+
+  user      User @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model OrderItem {
+  id               String @id @default(uuid())
+  orderId          String
+  productVariantId String
+  quantity         Int
+  price            Int
+
+  order   Order          @relation(fields: [orderId], references: [id])
+  variant ProductVariant @relation(fields: [productVariantId], references: [id])
+}
+
+model Delivery {
+  id        String @id @default(uuid())
+  orderId   String @unique
+  address   String
+  city      String
+  phone     String
+  status    DeliveryStatus
+
+  order     Order @relation(fields: [orderId], references: [id])
+}

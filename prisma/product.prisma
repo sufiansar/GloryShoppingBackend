@@ -1,0 +1,85 @@
+model Product {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  sku         String
+  brandId     String
+  categoryId  String
+  thumbleImage String?
+  price       Float
+  discount    Float?
+  stock       Int
+  shortDesc   String?
+  faquestions  String?
+  longDesc    String?
+  isActive    Boolean  @default(true)
+  brand       Brand    @relation(fields: [brandId], references: [id])
+  category    Category @relation(fields: [categoryId], references: [id])
+  variants    ProductVariant[]
+  images      ProductImage[]
+  reviews     Review[]
+  tag           Tag[]
+  videos      ProductVideo[]
+  ingredients ProductIngredient[]
+  concerns    ProductSkinConcern[]
+  skinTypes   ProductSkinType[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+}
+
+model ProductVariant {
+  id        String   @id @default(uuid())
+  productId String
+  size      String
+  title     String
+  price     Float?
+  stock     Int?
+  isDefault Boolean  @default(false)
+
+  product   Product  @relation(fields: [productId], references: [id])
+  orderItems OrderItem[]
+
+}
+
+model ProductImage {
+  id        String  @id @default(uuid())
+  productId String
+  images    String[]
+  isPrimary Boolean @default(false)
+  sortOrder Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model ProductVideo {
+  id        String  @id @default(uuid())
+  productId String
+  videos    String[]
+  isPrimary Boolean @default(false)
+  sortOrder Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Ingredient {
+  id          String       @id @default(uuid())
+  name        String
+  description String?
+  caution   String?
+  safetyLevel SafetyLevel
+  products    ProductIngredient[]
+}
+
+model ProductIngredient {
+  productId    String
+  ingredientId String
+
+  product      Product    @relation(fields: [productId], references: [id])
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@id([productId, ingredientId])
+}
+

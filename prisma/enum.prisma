@@ -1,0 +1,38 @@
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum PromotionType {
+  PERCENTAGE
+  FLAT
+}
+
+
+
+enum PaymentMethod {
+  COD
+  BKASH
+  CARD
+}
+
+enum SafetyLevel {
+  SAFE
+  MODERATE
+  RESTRICTED
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  SHIPPED
+  COMPLETED
+  CANCELLED
+}
+
+enum DeliveryStatus {
+  PROCESSING
+  ON_THE_WAY
+  DELIVERED
+}
