@@ -1,14 +1,34 @@
 model Category {
-  id        String     @id @default(uuid())
-  name      String
-  slug      String     @unique
-  parentId  String?
-  parent    Category? @relation("CategoryTree", fields: [parentId], references: [id])
-  children  Category[]@relation("CategoryTree")
-  products  Product[]
-  isActive  Boolean    @default(true)
-  createdAt DateTime   @default(now())
+  id          String              @id @default(uuid())
+  slug        String              @unique
+  name        String
+  description String?
+  images      String[]
+  products    Product[]
+  attributes  CategoryAttribute[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([name, slug])
 }
+
+
+
+
+model CategoryAttribute {
+  id          String    @id @default(uuid())
+  categoryId  String
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  attributeId String
+  attribute   Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  isRequired  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([categoryId, attributeId])
+  @@index([categoryId, attributeId])
+}
+
 
 
 model Brand {

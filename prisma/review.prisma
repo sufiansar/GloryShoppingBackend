@@ -11,3 +11,15 @@ model Review {
   createdAt DateTime @default(now())
 }
 
+model Report {
+  id         String   @id @default(uuid())
+  type       String
+  format     String
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  parameters Json
+  filePath   String?
+
+  @@index([userId])
+}
