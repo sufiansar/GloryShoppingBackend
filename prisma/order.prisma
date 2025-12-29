@@ -1,14 +1,19 @@
 model Order {
   id        String @id @default(uuid())
   userId    String
-  status    OrderStatus
-  total     Int
-
+  status    OrderStatus @default(PENDING)
+  amount      Float
+  orderDate   DateTime     @default(now())
+  shipment    Shipment?    @relation("OrderShipment")
+  payment     Payment?     @relation("OrderPayment")
+  transaction Transaction? @relation("OrderTransaction")
   items     OrderItem[]
   delivery  Delivery?
 
   user      User @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model OrderItem {
@@ -16,7 +21,7 @@ model OrderItem {
   orderId          String
   productVariantId String
   quantity         Int
-  price            Int
+  price            Float
 
   order   Order          @relation(fields: [orderId], references: [id])
   variant ProductVariant @relation(fields: [productVariantId], references: [id])
@@ -32,3 +37,4 @@ model Delivery {
 
   order     Order @relation(fields: [orderId], references: [id])
 }
+

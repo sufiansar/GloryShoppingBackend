@@ -1,0 +1,24 @@
+model StockMovement {
+  id        String         @id @default(uuid())
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  quantity  Int
+  reason    String
+  userId    String?
+  createdAt DateTime       @default(now())
+
+  @@index([variantId])
+}
+
+model Restock {
+  id        String         @id @default(uuid())
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  quantity  Int
+  notes     String?
+  userId    String?
+  user      User?  @relation("UserRestocks", fields: [userId], references: [id], onDelete: SetNull)
+  createdAt DateTime       @default(now())
+
+  @@index([variantId])
+}

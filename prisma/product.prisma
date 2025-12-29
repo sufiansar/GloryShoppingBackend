@@ -2,7 +2,14 @@ model Product {
   id          String    @id @default(uuid())
   name        String
   slug        String    @unique
-  sku         String
+  description   String?
+  salesCount    Int              @default(0)
+  isNew         Boolean          @default(false)
+  isFeatured    Boolean          @default(false)
+  isTrending    Boolean          @default(false)
+  isBestSeller  Boolean          @default(false)
+  averageRating Float            @default(0)
+  reviewCount   Int              @default(0)
   brandId     String
   categoryId  String
   thumbleImage String?
@@ -16,53 +23,75 @@ model Product {
   brand       Brand    @relation(fields: [brandId], references: [id])
   category    Category @relation(fields: [categoryId], references: [id])
   variants    ProductVariant[]
-  images      ProductImage[]
   reviews     Review[]
   tag           Tag[]
-  videos      ProductVideo[]
   ingredients ProductIngredient[]
   concerns    ProductSkinConcern[]
+  interactions  Interaction[]
   skinTypes   ProductSkinType[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
+  @@index([name, slug])
 }
 
 model ProductVariant {
   id        String   @id @default(uuid())
   productId String
+  sku               String @unique
   size      String
-  title     String
+  images            String[] 
   price     Float?
   stock     Int?
-  isDefault Boolean  @default(false)
-
+  lowStockThreshold Int @default(10)
+  attributes        ProductVariantAttribute[]
+  cartItems         CartItem[]
+  stockMovements    StockMovement[]
+  restocks          Restock[]
   product   Product  @relation(fields: [productId], references: [id])
   orderItems OrderItem[]
 
 }
+model Attribute {
+  id                String                    @id @default(uuid())
+  name              String                    @unique
+  slug              String                    @unique
+  values            AttributeValue[]
+  categories        CategoryAttribute[]
+  variantAttributes ProductVariantAttribute[]
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
 
-model ProductImage {
-  id        String  @id @default(uuid())
-  productId String
-  images    String[]
-  isPrimary Boolean @default(false)
-  sortOrder Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  product   Product @relation(fields: [productId], references: [id])
+  @@index([name, slug])
 }
 
-model ProductVideo {
-  id        String  @id @default(uuid())
-  productId String
-  videos    String[]
-  isPrimary Boolean @default(false)
-  sortOrder Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  product   Product @relation(fields: [productId], references: [id])
+model AttributeValue {
+  id                String                    @id @default(uuid())
+  attributeId       String
+  attribute         Attribute                 @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  value             String
+  slug              String                    @unique
+  variantAttributes ProductVariantAttribute[]
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  @@index([attributeId, value])
 }
+
+model ProductVariantAttribute {
+  id          String         @id @default(uuid())
+  variantId   String
+  variant     ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  attributeId String
+  attribute   Attribute      @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  valueId     String
+  value       AttributeValue @relation(fields: [valueId], references: [id], onDelete: Cascade)
+  createdAt   DateTime       @default(now())
+
+  @@unique([variantId, attributeId, valueId])
+  @@index([variantId, attributeId])
+}
+
+
 
 model Ingredient {
   id          String       @id @default(uuid())
