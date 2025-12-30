@@ -1,8 +1,10 @@
-import http, { Server } from "http";
-import app from "./app";
 import dotenv from "dotenv";
 
 dotenv.config();
+
+import http, { Server } from "http";
+import app from "./app";
+import { seedSuperAdmin } from "./app/utility/seedSuperAdmin";
 
 let server: Server | null = null;
 
@@ -64,6 +66,6 @@ function handleProcessEvents() {
     gracefulShutdown("unhandledRejection");
   });
 }
-
+seedSuperAdmin();
 // Start the application
 startServer();
