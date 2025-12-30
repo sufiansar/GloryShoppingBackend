@@ -1,7 +1,17 @@
 import jwt, { JwtPayload, SignOptions } from "jsonwebtoken";
+import dbConfig from "../config/db.config";
+
+interface JwtPayloadWithUser extends JwtPayload {
+  user: {
+    id: string;
+    email: string;
+    role: string;
+  };
+}
+console.log("Access token secret:", dbConfig.jwt.accessToken_secret);
 
 export const generateToken = (
-  payload: JwtPayload,
+  payload: JwtPayloadWithUser | JwtPayload,
   secret: string,
   expiresIn: string
 ) => {
@@ -13,7 +23,9 @@ export const generateToken = (
 };
 
 export const verifyToken = (token: string, secret: string) => {
-  const verifiedToken = jwt.verify(token, secret);
+  const verifiedToken = jwt.verify(token, secret) as
+    | JwtPayloadWithUser
+    | JwtPayload;
 
   return verifiedToken;
 };

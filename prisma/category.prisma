@@ -1,6 +1,6 @@
 model Category {
   id          String              @id @default(uuid())
-  slug        String              @unique
+  slug        String?              @unique
   name        String
   description String?
   images      String[]
@@ -28,8 +28,6 @@ model CategoryAttribute {
   @@unique([categoryId, attributeId])
   @@index([categoryId, attributeId])
 }
-
-
 
 model Brand {
   id        String   @id @default(uuid())

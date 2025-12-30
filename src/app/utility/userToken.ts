@@ -12,9 +12,11 @@ export const createUserToken = (user: Partial<User>) => {
   }
 
   const jwtPayload = {
-    id: user.id,
-    email: user.email,
-    role: user.role,
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    },
   };
 
   if (!dbConfig.jwt.accessToken_secret) {
@@ -31,6 +33,7 @@ export const createUserToken = (user: Partial<User>) => {
     );
   }
 
+  console.log("before The genereate token", dbConfig.jwt.accessToken_secret);
   const accessToken = generateToken(
     jwtPayload,
     dbConfig.jwt.accessToken_secret,

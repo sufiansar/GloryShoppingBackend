@@ -40,15 +40,15 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
 
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
-    secure: dbConfig.node_env === "production",
-    sameSite: "none",
+    secure: false,
+    sameSite: "lax",
     maxAge: accessTokenMaxAge,
   });
 
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: dbConfig.node_env === "production",
-    sameSite: "none",
+    secure: false,
+    sameSite: "lax",
     maxAge: refreshTokenMaxAge,
   });
 
@@ -56,7 +56,11 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
     statusCode: httpStatus.OK,
     success: true,
     message: "User logged in successfully",
-    data: userData,
+    data: {
+      ...userData,
+      accessToken,
+      refreshToken,
+    },
   });
 });
 
