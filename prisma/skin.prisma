@@ -3,6 +3,8 @@ model SkinConcern {
   id       String @id @default(uuid())
   name     String
   products ProductSkinConcern[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 
@@ -14,6 +16,8 @@ model ProductSkinConcern {
   skinConcern   SkinConcern @relation(fields: [skinConcernId], references: [id])
 
   @@id([productId, skinConcernId])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 
@@ -21,6 +25,8 @@ model SkinType {
   id       String @id @default(uuid())
   name     String
   products ProductSkinType[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 
@@ -30,6 +36,8 @@ model ProductSkinType {
 
   product   Product  @relation(fields: [productId], references: [id])
   skinType  SkinType @relation(fields: [skinTypeId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@id([productId, skinTypeId])
 }

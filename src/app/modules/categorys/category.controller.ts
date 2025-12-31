@@ -25,7 +25,8 @@ const getAllCategories = catchAsync(async (req: Request, res: Response) => {
     statusCode: httpStatus.OK,
     success: true,
     message: "Categories retrieved successfully",
-    data: result,
+    data: result.data,
+    meta: result.meta,
   });
 });
 

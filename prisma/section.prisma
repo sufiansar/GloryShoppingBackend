@@ -10,5 +10,7 @@ model Section {
   isVisible      Boolean?     @default(false)
   primaryColor   String?
   secondaryColor String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }
 
