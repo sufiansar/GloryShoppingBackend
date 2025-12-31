@@ -38,6 +38,7 @@ model Brand {
   products  Product[]
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 
@@ -49,5 +50,6 @@ productId String
 product   Product   @relation(fields: [productId], references: [id])
   isActive  Boolean   @default(true)
   createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 

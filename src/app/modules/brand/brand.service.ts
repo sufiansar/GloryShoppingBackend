@@ -26,14 +26,23 @@ const createBrand = async (brand: Partial<ICreateBrand>) => {
 };
 
 const getAllBrands = async (query: Record<string, string>) => {
-  const prisnaQuery = new PrismaQueryBuilder(query)
+  const prismaQueryBuilder = new PrismaQueryBuilder(query)
     .filter()
     .search(["name"])
     .sort()
-    .paginate()
-    .build();
-  const brands = await prisma.brand.findMany(prisnaQuery);
-  return brands;
+    .paginate();
+
+  const prismaQuery = prismaQueryBuilder.build();
+
+  const [brands, meta] = await Promise.all([
+    prisma.brand.findMany(prismaQuery),
+    prismaQueryBuilder.getMeta(prisma.brand),
+  ]);
+
+  return {
+    data: brands,
+    meta,
+  };
 };
 
 const getBrandById = async (id: string) => {

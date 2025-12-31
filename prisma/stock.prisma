@@ -19,6 +19,7 @@ model Restock {
   userId    String?
   user      User?  @relation("UserRestocks", fields: [userId], references: [id], onDelete: SetNull)
   createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 
   @@index([variantId])
 }

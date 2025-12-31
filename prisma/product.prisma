@@ -49,6 +49,8 @@ model ProductVariant {
   restocks          Restock[]
   product   Product  @relation(fields: [productId], references: [id])
   orderItems OrderItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
 }
 model Attribute {
@@ -62,6 +64,7 @@ model Attribute {
   updatedAt         DateTime                  @updatedAt
 
   @@index([name, slug])
+  
 }
 
 model AttributeValue {
@@ -86,6 +89,7 @@ model ProductVariantAttribute {
   valueId     String
   value       AttributeValue @relation(fields: [valueId], references: [id], onDelete: Cascade)
   createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
   @@unique([variantId, attributeId, valueId])
   @@index([variantId, attributeId])
@@ -100,6 +104,8 @@ model Ingredient {
   caution   String?
   safetyLevel SafetyLevel
   products    ProductIngredient[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }
 
 model ProductIngredient {
@@ -108,6 +114,8 @@ model ProductIngredient {
 
   product      Product    @relation(fields: [productId], references: [id])
   ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   @@id([productId, ingredientId])
 }

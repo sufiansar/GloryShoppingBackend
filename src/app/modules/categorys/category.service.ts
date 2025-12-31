@@ -23,21 +23,28 @@ const createCategory = async (categoryData: ICreateCategory) => {
 };
 
 const getAllCategories = async (query: Record<string, string>) => {
-  const prismaQuery = new PrismaQueryBuilder(query)
+  const prismaQueryBuilder = new PrismaQueryBuilder(query)
     .filter()
     .search(["name", "description"])
     .sort()
-    .paginate()
-    .build();
+    .paginate();
 
-  const categories = await prisma.category.findMany({
-    ...prismaQuery,
-    include: {
-      products: true,
-    },
-  });
+  const prismaQuery = prismaQueryBuilder.build();
 
-  return categories;
+  const [categories, meta] = await Promise.all([
+    prisma.category.findMany({
+      ...prismaQuery,
+      include: {
+        products: true,
+      },
+    }),
+    prismaQueryBuilder.getMeta(prisma.category),
+  ]);
+
+  return {
+    data: categories,
+    meta,
+  };
 };
 
 const getSingleCategory = async (id: string) => {

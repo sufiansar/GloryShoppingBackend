@@ -20,6 +20,7 @@ model ChatMessage {
   type      String   @default("TEXT")
   url       String?
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([chatId, senderId])
 }

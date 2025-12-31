@@ -43,29 +43,53 @@ const createProduct = async (payload: IProduct) => {
 
   return newProduct;
 };
-
 const getAllProducts = async (query: Record<string, string>) => {
-  const primaQuery = new PrismaQueryBuilder(query)
+  const prismaQueryBuilder = new PrismaQueryBuilder(query)
     .filter(productFilters)
     .search(["name", "description"])
     .sort()
-    .paginate()
-    .build();
+    .paginate();
 
-  const products = await prisma.product.findMany({
-    ...primaQuery,
-    include: {
-      brand: true,
-      category: true,
-      reviews: true,
-      variants: true,
-      ingredients: true,
-      skinTypes: true,
+  const prismaQuery = prismaQueryBuilder.build();
 
-      concerns: true,
-    },
-  });
-  return products;
+  const [products, meta] = await Promise.all([
+    prisma.product.findMany({
+      ...prismaQuery,
+      include: {
+        brand: true,
+        category: true,
+        reviews: true,
+        variants: {
+          include: {
+            attributes: true,
+            cartItems: true,
+            orderItems: true,
+          },
+        },
+        ingredients: true,
+        skinTypes: {
+          include: {
+            skinType: {
+              select: { name: true },
+            },
+          },
+        },
+        concerns: {
+          include: {
+            skinConcern: {
+              select: { name: true },
+            },
+          },
+        },
+      },
+    }),
+    prismaQueryBuilder.getMeta(prisma.product),
+  ]);
+
+  return {
+    data: products,
+    meta,
+  };
 };
 
 const getProductById = async (id: string) => {
