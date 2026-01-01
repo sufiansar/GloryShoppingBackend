@@ -1,0 +1,37 @@
+import { Router } from "express";
+import { SectionController } from "./section.controller";
+import auth from "../../middlewares/checkAuth";
+import { UserRole } from "../../../generated/prisma";
+import { multerUpload } from "../../config/multer.config";
+
+const router = Router();
+
+router.get(
+  "/",
+  auth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
+  SectionController.getAllSections
+);
+router.get(
+  "/:id",
+  auth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
+  SectionController.getSectionById
+);
+router.post(
+  "/",
+  multerUpload.array("images"),
+  auth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
+  SectionController.createSection
+);
+router.patch(
+  "/:id",
+  multerUpload.array("images"),
+  auth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
+  SectionController.updateSection
+);
+router.delete(
+  "/:id",
+  auth(UserRole.SUPER_ADMIN),
+  SectionController.deleteSection
+);
+
+export const SectionRoute = router;

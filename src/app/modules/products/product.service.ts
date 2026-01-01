@@ -66,7 +66,22 @@ const getAllProducts = async (query: Record<string, string>) => {
             orderItems: true,
           },
         },
-        ingredients: true,
+        ingredients: {
+          include: {
+            ingredient: {
+              select: {
+                name: true,
+                description: true,
+                benefits: true,
+                sideEffects: true,
+                usage: true,
+                precautions: true,
+                safetyLevel: true,
+                isActive: true,
+              },
+            },
+          },
+        },
         skinTypes: {
           include: {
             skinType: {

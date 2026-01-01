@@ -7,6 +7,8 @@ import { BrandRoutes } from "../modules/brand/brand.route";
 import { ProductRoutes } from "../modules/products/product.route";
 import { VariantRoutes } from "../modules/variant/variant.route";
 import { SkinRoutes } from "../modules/skin/skin.route";
+import { IngredientRoutes } from "../modules/Ingredient/Ingredient.route";
+import { SectionRoute } from "../modules/section/section.route";
 
 const router = express.Router();
 
@@ -38,6 +40,14 @@ const moduleRoutes = [
   {
     path: "/skin",
     route: SkinRoutes,
+  },
+  {
+    path: "/ingredient",
+    route: IngredientRoutes,
+  },
+  {
+    path: "/section",
+    route: SectionRoute,
   },
 ];
 

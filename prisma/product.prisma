@@ -100,13 +100,18 @@ model ProductVariantAttribute {
 model Ingredient {
   id          String       @id @default(uuid())
   name        String
-  description String?
-  caution   String?
+  description String?       
+  benefits    String?     
+  sideEffects String?       
+  usage       String?     
+  precautions String?       
+  isActive    Boolean       @default(true) 
   safetyLevel SafetyLevel
-  products    ProductIngredient[]
+  products    ProductIngredient[] 
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
+
 
 model ProductIngredient {
   productId    String
