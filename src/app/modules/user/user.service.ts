@@ -12,8 +12,6 @@ const createUser = async (userData: IUser) => {
   if (isUserExist) {
     throw new Error("User already exists");
   }
-  console.log("DEBUG password:", userData.passwordHash);
-  console.log("DEBUG salt:", dbConfig.bcryptJs_salt);
 
   const hashedPassword = await bcrypt.hash(
     userData.passwordHash,

@@ -1,5 +1,5 @@
 model Section {
-  id             Int          @id @unique @default(autoincrement())
+  id            String         @id @unique @default(uuid())
   type           SECTION_TYPE @default(HERO)
   title          String?
   description    String?

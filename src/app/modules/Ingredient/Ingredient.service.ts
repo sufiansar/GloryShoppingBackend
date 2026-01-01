@@ -1,0 +1,129 @@
+import { prisma } from "../../config/prisma";
+import { PrismaQueryBuilder } from "../../utility/queryBuilder";
+import { IIngredient } from "./Ingredient.interface";
+
+const createIngredient = async (data: IIngredient) => {
+  const ingredient = await prisma.ingredient.create({
+    data: {
+      name: data.name,
+      description: data.description ?? undefined,
+      benefits: data.benefits ?? undefined,
+      sideEffects: data.sideEffects ?? undefined,
+      usage: data.usage ?? undefined,
+      precautions: data.precautions ?? undefined,
+      isActive: data.isActive ?? true,
+      safetyLevel: data.safetyLevel || "SAFE",
+    },
+  });
+
+  return ingredient;
+};
+
+const getAllIngredients = async (query: Record<string, string>) => {
+  const prismaQueryBuilder = new PrismaQueryBuilder(query)
+    .filter()
+    .search(["name", "description"])
+    .sort()
+    .paginate();
+
+  const prismaQuery = prismaQueryBuilder.build();
+
+  const [ingredients, meta] = await Promise.all([
+    prisma.ingredient.findMany({
+      ...prismaQuery,
+    }),
+    prismaQueryBuilder.getMeta(prisma.ingredient),
+  ]);
+
+  return {
+    data: ingredients,
+    meta,
+  };
+};
+
+const getIngredientById = async (id: string) => {
+  const ingredient = await prisma.ingredient.findUnique({
+    where: { id },
+  });
+  return ingredient;
+};
+const updateIngredient = async (
+  id: string,
+  ingredientData: Partial<IIngredient>
+) => {
+  const existingIngredient = await prisma.ingredient.findUnique({
+    where: { id },
+  });
+
+  if (!existingIngredient) {
+    throw new Error("Ingredient not found");
+  }
+
+  const { products, ...scalarData } = ingredientData;
+
+  const updatedIngredient = await prisma.ingredient.update({
+    where: { id },
+    data: scalarData,
+  });
+
+  return updatedIngredient;
+};
+
+const deleteIngredient = async (id: string) => {
+  const existingIngredient = await prisma.ingredient.findUnique({
+    where: { id },
+  });
+
+  if (!existingIngredient) {
+    throw new Error("Ingredient not found");
+  }
+
+  await prisma.ingredient.delete({
+    where: { id },
+  });
+
+  return { message: "Ingredient deleted successfully" };
+};
+
+const joinIngredientsToProduct = async (
+  ingredientIds: string[] | string,
+  productId: string
+) => {
+  const ids = Array.isArray(ingredientIds) ? ingredientIds : [ingredientIds];
+
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { id: true },
+  });
+
+  if (!product) {
+    throw new Error("Product not found");
+  }
+
+  const ingredientCount = await prisma.ingredient.count({
+    where: { id: { in: ids } },
+  });
+
+  if (ingredientCount !== ids.length) {
+    throw new Error("One or more ingredients not found");
+  }
+
+  await prisma.$transaction(
+    ids.map((ingredientId) =>
+      prisma.productIngredient.upsert({
+        where: { productId_ingredientId: { productId, ingredientId } },
+        create: { productId, ingredientId },
+        update: {},
+      })
+    )
+  );
+};
+
+export const IngredientService = {
+  createIngredient,
+  getAllIngredients,
+  getIngredientById,
+  updateIngredient,
+  deleteIngredient,
+  joinIngredientsToProduct,
+};
