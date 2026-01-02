@@ -1,3 +1,4 @@
+import { UserRole } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
 import { PrismaQueryBuilder } from "../../utility/queryBuilder";
 import { IReview } from "./review.interface";
@@ -87,10 +88,17 @@ const updateReview = async (reviewId: string, data: Partial<IReview>) => {
 
   return updatedReview;
 };
-const deleteReview = async (reviewId: string) => {
+const deleteReview = async (reviewId: string, user: any) => {
   const existingReview = await prisma.review.findUnique({
     where: { id: reviewId },
   });
+
+  const isOwner = existingReview?.userId === user.id;
+  const isAdmin =
+    user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN;
+  if (!isOwner && !isAdmin) {
+    throw new Error("You do not have permission to delete this review");
+  }
 
   if (!existingReview) {
     throw new Error("Review not found");

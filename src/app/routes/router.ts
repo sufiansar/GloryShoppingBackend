@@ -9,6 +9,8 @@ import { VariantRoutes } from "../modules/variant/variant.route";
 import { SkinRoutes } from "../modules/skin/skin.route";
 import { IngredientRoutes } from "../modules/Ingredient/Ingredient.route";
 import { SectionRoute } from "../modules/section/section.route";
+import { AddressRoute } from "../modules/address/address.route";
+import { ReviewRoute } from "../modules/review/review.route";
 
 const router = express.Router();
 
@@ -48,6 +50,14 @@ const moduleRoutes = [
   {
     path: "/section",
     route: SectionRoute,
+  },
+  {
+    path: "/review",
+    route: ReviewRoute,
+  },
+  {
+    path: "/address",
+    route: AddressRoute,
   },
 ];
 

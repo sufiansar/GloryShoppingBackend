@@ -20,7 +20,7 @@ model Cart {
   status     CART_STATUS @default(ACTIVE)
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
-
+ @@unique([userId, status]) 
   @@index([userId, sessionId])
 }
 
