@@ -55,6 +55,31 @@ const loginUser = async (payload: LoginPayload) => {
   return { accessToken, refreshToken };
 };
 
+const changeUserPassword = async (userId: string, newPassword: string) => {
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash: hashedPassword },
+  });
+};
+
+const resetPassword = async (email: string, newPassword: string) => {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    throw new Error("User with the provided email does not exist.");
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+  await prisma.user.update({
+    where: { email },
+    data: { passwordHash: hashedPassword },
+  });
+};
 export const AuthService = {
   loginUser,
+  changeUserPassword,
 };

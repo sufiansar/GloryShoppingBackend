@@ -59,7 +59,8 @@ const updateReview = catchAsync(async (req: Request, res: Response) => {
 
 const deleteReview = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const result = await ReviewService.deleteReview(id);
+  const user = req.user;
+  const result = await ReviewService.deleteReview(id, user);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
