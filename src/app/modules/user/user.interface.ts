@@ -14,6 +14,17 @@ export interface IUser {
   reviews: IReview[];
 }
 
+export interface IUserUpdate {
+  name: string;
+  email: string;
+  passwordHash: string;
+  phone?: string | null;
+  role: UserRole;
+  profileImage?: string | null;
+  isVerified?: boolean;
+  isActive?: boolean;
+}
+
 export interface IAddress {
   userId: string;
   label?: string | null;

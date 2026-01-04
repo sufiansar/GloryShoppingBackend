@@ -1,8 +1,11 @@
 import { prisma } from "../../config/prisma";
 import bcrypt from "bcryptjs";
-import { generateToken } from "../../utility/jwt";
+import Jwt, { JwtPayload } from "jsonwebtoken";
 import dbConfig from "../../config/db.config";
 import { createUserToken } from "../../utility/userToken";
+import AppError from "../../errorHelpers/AppError";
+import httpStatus from "http-status";
+import { sendEmail } from "../../utility/sendEmail";
 
 interface LoginPayload {
   email: string;
@@ -30,34 +33,33 @@ const loginUser = async (payload: LoginPayload) => {
   }
   console.log("Access token secret Login:", dbConfig.jwt.accessToken_secret);
 
-  // const accessToken = generateToken(
-  //   {
-  //     id: userData.id,
-  //     email: userData.email,
-  //     role: userData.role,
-  //   },
-  //   dbConfig.jwt.accessToken_secret as string,
-  //   dbConfig.jwt.accessToken_expiresIn as string
-  // );
-
   const accessToken = createUserToken(userData).accessToken;
-  // const refreshToken = generateToken(
-  //   {
-  //     id: userData.id,
-  //     email: userData.email,
-  //     role: userData.role,
-  //   },
-  //   dbConfig.jwt.refreshToken_secret as string,
-  //   dbConfig.jwt.refreshToken_expiresIn as string
-  // );
 
   const refreshToken = createUserToken(userData).refreshToken;
   return { accessToken, refreshToken };
 };
 
-const changeUserPassword = async (userId: string, newPassword: string) => {
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(newPassword, salt);
+const changeUserPassword = async (
+  userId: string,
+  newPassword: string,
+  oldPassword: string
+) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const isOldPasswordCorrect = await bcrypt.compare(
+    oldPassword,
+    user.passwordHash
+  );
+  if (!isOldPasswordCorrect) {
+    throw new Error("Old password is incorrect");
+  }
+  const hashedPassword = await bcrypt.hash(
+    newPassword,
+    Number(dbConfig.bcryptJs_salt)
+  );
 
   await prisma.user.update({
     where: { id: userId },
@@ -65,22 +67,83 @@ const changeUserPassword = async (userId: string, newPassword: string) => {
   });
 };
 
-const resetPassword = async (email: string, newPassword: string) => {
+const resetPassword = async (
+  payload: Record<string, any>,
+  decodedToken: JwtPayload
+) => {
+  const { newPassword } = payload;
+  const email = decodedToken.email as string;
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
     throw new Error("User with the provided email does not exist.");
   }
 
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(newPassword, salt);
+  const hashedPassword = await bcrypt.hash(
+    newPassword,
+    Number(dbConfig.bcryptJs_salt)
+  );
 
   await prisma.user.update({
     where: { email },
     data: { passwordHash: hashedPassword },
   });
 };
+
+const forgotPassword = async (email: string) => {
+  const isUserExit = await prisma.user.findUnique({ where: { email } });
+
+  if (!isUserExit) {
+    throw new AppError(httpStatus.BAD_REQUEST, "User does not exist", "");
+  }
+
+  if (!isUserExit.isVerified) {
+    throw new AppError(httpStatus.FORBIDDEN, "User Not Verified", "");
+  }
+
+  const jwtPayload = {
+    userId: isUserExit.id,
+    email: isUserExit.email,
+    role: isUserExit.role,
+  };
+
+  const resetLink = Jwt.sign(
+    jwtPayload,
+    dbConfig.jwt.accessToken_secret as string,
+    {
+      expiresIn: "5m",
+    }
+  );
+
+  const resetUILink = `${dbConfig.frontEnd_url}/reset-Password?id=${isUserExit.id}&token=${resetLink}`;
+  sendEmail({
+    to: isUserExit.email,
+    subject: "Forget Password",
+    templateName: "forgetPassword",
+    templateData: {
+      name: isUserExit.name,
+      resetUILink,
+    },
+  });
+};
+
+const getme = async (userId: string) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      name: true,
+      email: true,
+      role: true,
+      isActive: true,
+      isVerified: true,
+    },
+  });
+  return user;
+};
+
 export const AuthService = {
   loginUser,
   changeUserPassword,
   resetPassword,
+  forgotPassword,
+  getme,
 };
