@@ -1,27 +1,38 @@
 import { CART_EVENT, CART_STATUS } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
 
-const addToCart = async (
-  userId: string,
+export const addToCart = async (
+  userId: string | null,
   variantId: string,
-  quantity: number = 1
+  quantity: number = 1,
+  sessionId: string | null
 ) => {
   return prisma.$transaction(async (tx) => {
-    const cart = await tx.cart.upsert({
-      where: {
-        userId_status: {
+    let cart;
+    if (userId) {
+      cart = await tx.cart.upsert({
+        where: {
+          userId_status: { userId, status: CART_STATUS.ACTIVE },
+        },
+        update: {},
+        create: {
           userId,
           status: CART_STATUS.ACTIVE,
         },
-      },
-      update: {},
-      create: {
-        userId,
-        status: CART_STATUS.ACTIVE,
-      },
-    });
-
-    // 2. Add or update cart item
+      });
+    } else {
+      if (!sessionId) {
+        throw new Error("sessionId is required for guest users");
+      }
+      cart = await tx.cart.upsert({
+        where: { sessionId },
+        update: {},
+        create: {
+          sessionId,
+          status: CART_STATUS.ACTIVE,
+        },
+      });
+    }
 
     const cartItem = await tx.cartItem.upsert({
       where: {
@@ -40,16 +51,21 @@ const addToCart = async (
       },
     });
 
-    // 3. Log cart event
-    await tx.cartEvent.create({
+    const cartEvent = await tx.cartEvent.create({
       data: {
         cartId: cart.id,
-        userId,
+        userId: userId || null,
+        sessionId: userId ? null : sessionId,
         eventType: CART_EVENT.ADD,
       },
     });
 
-    return { cart, cartItem };
+    return {
+      cart,
+      cartItem,
+      cartEvent,
+      sessionId,
+    };
   });
 };
 

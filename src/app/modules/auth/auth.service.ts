@@ -82,4 +82,5 @@ const resetPassword = async (email: string, newPassword: string) => {
 export const AuthService = {
   loginUser,
   changeUserPassword,
+  resetPassword,
 };

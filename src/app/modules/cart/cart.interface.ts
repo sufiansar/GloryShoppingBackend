@@ -8,7 +8,7 @@ import {
 } from "../../../generated/prisma";
 
 export interface ICart {
-  userId?: string;
+  userId?: string | undefined;
   sessionId?: string | null;
   status: CART_STATUS;
   cartItems?: ICartItem[];
@@ -25,7 +25,7 @@ export interface ICartItem {
 
 export interface ICartEvent {
   cartId: string;
-  userId?: string | null;
+  userId?: string | undefined;
   sessionId?: string | null;
   eventType: CART_EVENT;
   timestamp: Date;

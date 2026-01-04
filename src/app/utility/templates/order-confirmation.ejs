@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Order Confirmed - Glory Shopping BD</title>
+  </head>
+
+  <body style="margin: 0; padding: 0; background: #f4f6f8">
+    <table
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      style="background: #f4f6f8"
+    >
+      <tr>
+        <td align="center">
+          <table
+            width="600"
+            cellpadding="0"
+            cellspacing="0"
+            style="
+              background: #ffffff;
+              padding: 24px;
+              font-family: Arial, sans-serif;
+              color: #222;
+            "
+          >
+            <!-- Brand Header -->
+            <tr>
+              <td>
+                <h2 style="margin: 0; color: #0b5ed7">Glory Shopping BD</h2>
+                <p style="margin-top: 4px; color: #555">
+                  Trusted online shopping in Bangladesh
+                </p>
+              </td>
+            </tr>
+
+            <!-- Confirmation -->
+            <tr>
+              <td style="padding-top: 20px">
+                <h3 style="margin-bottom: 5px">Your order is confirmed ✅</h3>
+                <p style="color: #555">
+                  Hello <strong><%= customer.name %></strong>,<br />
+                  Thank you for shopping with Glory Shopping BD. We will contact
+                  you before delivery.
+                </p>
+              </td>
+            </tr>
+
+            <!-- Order Info -->
+            <tr>
+              <td style="padding-top: 20px">
+                <h4 style="border-bottom: 1px solid #ddd; padding-bottom: 6px">
+                  Order Details
+                </h4>
+                <p><strong>Order ID:</strong> <%= order.id %></p>
+                <p><strong>Payment Method:</strong> Cash on Delivery (COD)</p>
+              </td>
+            </tr>
+
+            <!-- Items -->
+            <tr>
+              <td style="padding-top: 20px">
+                <h4 style="border-bottom: 1px solid #ddd; padding-bottom: 6px">
+                  Items
+                </h4>
+
+                <table
+                  width="100%"
+                  cellpadding="6"
+                  cellspacing="0"
+                  style="border-collapse: collapse; border: 1px solid #ddd"
+                >
+                  <tr style="background: #f1f1f1">
+                    <th align="left">Product</th>
+                    <th align="center">Qty</th>
+                    <th align="right">Price</th>
+                  </tr>
+
+                  <% items.forEach(item => { %>
+                  <tr>
+                    <td><%= item.name %></td>
+                    <td align="center"><%= item.quantity %></td>
+                    <td align="right">৳<%= item.price.toLocaleString() %></td>
+                  </tr>
+                  <% }) %>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Pricing -->
+            <tr>
+              <td style="padding-top: 20px">
+                <h4 style="border-bottom: 1px solid #ddd; padding-bottom: 6px">
+                  Price Summary
+                </h4>
+                <table width="100%" cellpadding="4">
+                  <tr>
+                    <td>Products Total</td>
+                    <td align="right">
+                      ৳<%= pricing.productTotal.toLocaleString() %>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Delivery Charge</td>
+                    <td align="right">
+                      ৳<%= pricing.deliveryCharge.toLocaleString() %>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>Total Payable</strong></td>
+                    <td align="right">
+                      <strong
+                        >৳<%= pricing.grandTotal.toLocaleString() %></strong
+                      >
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Shipping Info -->
+            <tr>
+              <td style="padding-top: 20px">
+                <h4 style="border-bottom: 1px solid #ddd; padding-bottom: 6px">
+                  Delivery Information
+                </h4>
+                <p>
+                  <strong>Address:</strong><br />
+                  <%= shipping.address %><br />
+                  <%= shipping.city %> <% if (shipping.postalCode) { %> - <%=
+                  shipping.postalCode %> <% } %>
+                </p>
+                <p><strong>Phone:</strong> <%= shipping.phone %></p>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="padding-top: 30px; font-size: 13px; color: #777">
+                <p>
+                  If you have any questions, reply to this email or contact
+                  <strong>Glory Shopping BD</strong>.
+                </p>
+                <p>Thank you for choosing us 💙</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

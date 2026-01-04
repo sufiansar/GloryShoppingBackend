@@ -44,4 +44,41 @@ const auth = (...roles: string[]) => {
   };
 };
 
+// Optional auth middleware - allows both authenticated and guest users
+const optionalAuth = (...roles: string[]) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const token =
+        req.cookies?.accessToken || req.headers.authorization?.split(" ")[1];
+
+      if (token) {
+        // Token exists, try to verify it
+        const decoded = verifyToken(token, dbConfig.jwt.accessToken_secret!);
+        const user = decoded.user ? decoded.user : decoded;
+
+        if (user?.email) {
+          req.user = user;
+
+          // Check roles if specified
+          if (roles.length && !roles.includes(user.role)) {
+            return res.status(403).json({
+              success: false,
+              message: "You are not authorized to access this route.",
+            });
+          }
+
+          console.log("req.user:", req.user);
+        }
+      }
+      // If no token or token verification fails, continue as guest user
+      next();
+    } catch (err: any) {
+      // If token verification fails, allow guest user to continue
+      console.log("Optional auth: Allowing guest user access");
+      next();
+    }
+  };
+};
+
 export default auth;
+export { optionalAuth };
