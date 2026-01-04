@@ -1,6 +1,7 @@
 model Order {
   id        String @id @default(uuid())
-  userId    String
+  userId    String?
+  guestId   String?
   status    OrderStatus @default(PENDING)
   amount      Float
   orderDate   DateTime     @default(now())
@@ -9,8 +10,7 @@ model Order {
   transaction Transaction? @relation("OrderTransaction")
   items     OrderItem[]
   delivery  Delivery?
-
-  user      User @relation(fields: [userId], references: [id])
+  user      User? @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -32,12 +32,15 @@ model OrderItem {
 
 model Delivery {
   id        String @id @default(uuid())
+  name      String?
+  email     String?
   orderId   String @unique
   address   String
   city      String
   phone     String
-  status    DeliveryStatus
-
+  postalCode String?
+  deliveryCharge Float?
+  status    DeliveryStatus @default(PROCESSING)
   order     Order @relation(fields: [orderId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

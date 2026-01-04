@@ -8,10 +8,20 @@ export interface IOrderItem {
   price: number;
 }
 export interface IOrder {
-  id: string;
+  id?: string;
   userId: string;
   status: OrderStatus;
   amount: number;
   orderDate: Date;
   items: IOrderItem[];
+}
+
+export interface DeliveryInput {
+  name?: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  postalCode?: string;
+  deliveryCharge?: number;
 }

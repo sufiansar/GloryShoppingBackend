@@ -77,4 +77,6 @@ enum DeliveryStatus {
   PROCESSING
   ON_THE_WAY
   DELIVERED
+  RETURNED
+  CANCELED
 }

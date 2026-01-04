@@ -11,6 +11,9 @@ import { IngredientRoutes } from "../modules/Ingredient/Ingredient.route";
 import { SectionRoute } from "../modules/section/section.route";
 import { AddressRoute } from "../modules/address/address.route";
 import { ReviewRoute } from "../modules/review/review.route";
+import { ContactRoutes } from "../modules/contact/contact.route";
+import { CartRouter } from "../modules/cart/cart.route";
+import { OrderRoute } from "../modules/order/order.route";
 
 const router = express.Router();
 
@@ -58,6 +61,19 @@ const moduleRoutes = [
   {
     path: "/address",
     route: AddressRoute,
+  },
+
+  {
+    path: "/cart",
+    route: CartRouter,
+  },
+  {
+    path: "/order",
+    route: OrderRoute,
+  },
+  {
+    path: "/contact",
+    route: ContactRoutes,
   },
 ];
 
