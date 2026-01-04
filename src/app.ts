@@ -3,20 +3,15 @@ import cors from "cors";
 import router from "./app/routes/router";
 import dotenv from "dotenv";
 
-// import config from "./config";
-
 import cookieParser from "cookie-parser";
 import globalErrorHandler from "./app/middlewares/globalErrorHandler";
 import notFound from "./app/middlewares/notFound";
-// import { PaymentController } from "./app/modules/payment/payment.controller";
-// import cron from "node-cron";
-// import { AppointmentService } from "./app/modules/Appointment/appointment.service";
-// import { date } from "zod";
+
 const app: Application = express();
 
 app.use(
   cors({
-    origin: "http://localhost:3001",
+    origin: "http://localhost:3000",
     credentials: true,
   })
 );

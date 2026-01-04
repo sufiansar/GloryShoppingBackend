@@ -4,6 +4,7 @@ import { sendResponse } from "../../utility/sendResponse";
 import httpStatus from "http-status";
 import dbConfig from "../../config/db.config";
 import { AuthService } from "./auth.service";
+import { JwtPayload } from "jsonwebtoken";
 
 const loginUser = catchAsync(async (req: Request, res: Response) => {
   const accessTokenExpireIn = dbConfig.jwt.accessToken_expiresIn as string;
@@ -78,9 +79,9 @@ const logOUtUser = catchAsync(async (req: Request, res: Response) => {
 
 const changeUserPassword = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.id; // Assuming user ID is available in req.user
-  const newPassword = req.body.newPassword;
+  const { newPassword, oldPassword } = req.body;
 
-  await AuthService.changeUserPassword(userId, newPassword);
+  await AuthService.changeUserPassword(userId, newPassword, oldPassword);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -90,8 +91,48 @@ const changeUserPassword = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const forgotPassword = catchAsync(async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  await AuthService.forgotPassword(email);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Password reset link sent to email successfully",
+    data: null,
+  });
+});
+
+const resetPassword = catchAsync(async (req: Request, res: Response) => {
+  const decodedToken = req.user;
+
+  await AuthService.resetPassword(req.body, decodedToken as JwtPayload);
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Password Change  Succesfully",
+    data: null,
+  });
+});
+
+const getme = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+
+  const user = await AuthService.getme(userId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "User profile fetched successfully",
+    data: user,
+  });
+});
 export const AuthController = {
   loginUser,
   logOUtUser,
   changeUserPassword,
+  forgotPassword,
+  resetPassword,
+  getme,
 };

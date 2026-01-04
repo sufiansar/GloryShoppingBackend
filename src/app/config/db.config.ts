@@ -8,6 +8,7 @@ export default {
   port: process.env.PORT,
   database_url: process.env.DATABASE_URL,
   bcryptJs_salt: process.env.BCRYTPJS_SALT,
+  frontEnd_url: process.env.FONTEND_URL,
 
   superAdmin: {
     superAdmin_name: process.env.SUPERADMIN_NAME,

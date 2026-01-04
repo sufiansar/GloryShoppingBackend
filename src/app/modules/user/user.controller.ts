@@ -5,8 +5,15 @@ import httpStatus from "http-status-codes";
 import { UserService } from "./user.service";
 
 const createUser = catchAsync(async (req: Request, res: Response) => {
-  const userData = req.body;
-  const result = await UserService.createUser(userData);
+  const userData = req.body || JSON.parse(req.body.data);
+  const profileImage = req.file?.path;
+  if (profileImage) {
+    userData.profileImage = profileImage;
+  }
+
+  const payload = { ...userData };
+
+  const result = await UserService.createUser(payload);
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     success: true,
@@ -35,9 +42,63 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const userRoleUpdate = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.params.id;
+  const { role } = req.body;
+  const result = await UserService.userRoleUpdate(userId, role);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "User role updated successfully",
+    data: result,
+  });
+});
+
+const updateUser = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.params.id;
+  const updateData = req.body || JSON.parse(req.body.data);
+  const profileImage = req.file?.path;
+  if (profileImage) {
+    updateData.profileImage = profileImage;
+  }
+
+  const result = await UserService.updateUser(userId, updateData);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "User updated successfully",
+    data: result,
+  });
+});
+
+const deleteUser = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.params.id;
+  await UserService.deleteUser(userId);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "User deleted successfully",
+    data: null,
+  });
+});
+
+const getMyProfile = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.id as string;
+  const result = await UserService.getMyProfile(userId);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "User profile retrieved successfully",
+    data: result,
+  });
+});
 
 export const UserController = {
   createUser,
   getUserById,
   getAllUsers,
+  updateUser,
+  deleteUser,
+  userRoleUpdate,
+  getMyProfile,
 };

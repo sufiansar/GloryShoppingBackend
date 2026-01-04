@@ -1,7 +1,11 @@
+import { UserRole } from "../../../generated/prisma";
+import { deleteImageFromCLoudinary } from "../../config/cloudinary";
 import dbConfig from "../../config/db.config";
 import { prisma } from "../../config/prisma";
-import { IUser } from "./user.interface";
+import AppError from "../../errorHelpers/AppError";
+import { IUser, IUserUpdate } from "./user.interface";
 import bcrypt from "bcryptjs";
+import httpStatus from "http-status";
 const createUser = async (userData: IUser) => {
   const isUserExist = await prisma.user.findUnique({
     where: {
@@ -65,8 +69,100 @@ const getAllUsers = async () => {
   return users;
 };
 
+const userRoleUpdate = async (userId: string, role: UserRole) => {
+  const user = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+  if (user.role !== UserRole.SUPER_ADMIN) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "Only Super Admin can change user roles"
+    );
+  }
+  const updatedUser = await prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      role: role,
+    },
+  });
+  return updatedUser;
+};
+
+const updateUser = async (userId: string, updateData: IUserUpdate) => {
+  const existingUser = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+  });
+
+  if (!existingUser) {
+    throw new Error("User not found");
+  }
+
+  if (updateData.passwordHash) {
+    const hashedPassword = await bcrypt.hash(
+      updateData.passwordHash,
+      Number(dbConfig.bcryptJs_salt)
+    );
+    updateData.passwordHash = hashedPassword;
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: updateData,
+  });
+  if (updateData.profileImage && existingUser.profileImage) {
+    try {
+      await deleteImageFromCLoudinary(existingUser.profileImage);
+    } catch (err) {
+      console.error("Failed to delete old image:", err);
+    }
+  }
+  return updatedUser;
+};
+
+const deleteUser = async (userId: string) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw new Error("User not found");
+  }
+  if (user.profileImage) {
+    await deleteImageFromCLoudinary(user.profileImage);
+  }
+  await prisma.user.delete({ where: { id: userId } });
+
+  return;
+};
+
+const getMyProfile = async (userId: string) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      addresses: true,
+      reviews: true,
+    },
+  });
+  if (!user) {
+    throw new Error("User not found");
+  }
+  return user;
+};
 export const UserService = {
   createUser,
   getUserById,
   getAllUsers,
+  updateUser,
+  deleteUser,
+  userRoleUpdate,
+  getMyProfile,
 };
