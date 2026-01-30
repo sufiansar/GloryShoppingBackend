@@ -1,8 +1,9 @@
 model Product {
   id          String    @id @default(uuid())
   name        String
-  slug        String?    @unique
+  slug        String    @unique
   description   String?
+  country    String?
   salesCount    Int              @default(0)
   isNew         Boolean          @default(false)
   isFeatured    Boolean          @default(false)
@@ -20,8 +21,8 @@ model Product {
   faquestions  String?
   longDesc    String?
   isActive    Boolean  @default(true)
-  brand       Brand    @relation(fields: [brandId], references: [id])
-  category    Category @relation(fields: [categoryId], references: [id])
+  brand       Brand    @relation(fields: [brandId], references: [id],onDelete: Cascade)
+  category    Category @relation(fields: [categoryId], references: [id],onDelete: Cascade)
   variants    ProductVariant[]
   reviews     Review[]
   tag           Tag[]
@@ -47,7 +48,7 @@ model ProductVariant {
   cartItems         CartItem[]
   stockMovements    StockMovement[]
   restocks          Restock[]
-  product   Product  @relation(fields: [productId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id],onDelete: Cascade)
   orderItems OrderItem[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -117,11 +118,14 @@ model ProductIngredient {
   productId    String
   ingredientId String
 
-  product      Product    @relation(fields: [productId], references: [id])
-  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  product      Product    @relation(fields: [productId], references: [id],onDelete: Cascade)
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id],onDelete: Cascade)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
   @@id([productId, ingredientId])
 }
+
+
+
 

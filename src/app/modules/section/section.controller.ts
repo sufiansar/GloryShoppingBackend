@@ -12,6 +12,7 @@ const createSection = catchAsync(async (req: Request, res: Response) => {
     ...data,
     images,
   };
+  console.log(payload);
   const result = await SectionService.createSection(payload);
   sendResponse(res, {
     statusCode: httpStatus.CREATED,

@@ -44,7 +44,6 @@ const auth = (...roles: string[]) => {
   };
 };
 
-// Optional auth middleware - allows both authenticated and guest users
 const optionalAuth = (...roles: string[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {

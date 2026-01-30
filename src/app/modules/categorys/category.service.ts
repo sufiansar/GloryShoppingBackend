@@ -8,6 +8,9 @@ const createCategory = async (categoryData: ICreateCategory) => {
   if (!categoryData.images) {
     categoryData.images = [];
   }
+  if (categoryData.name === undefined) {
+    throw new Error("Category name is required");
+  }
   const createSlug = generateSlug(categoryData.name);
   categoryData.slug = createSlug;
   const category = {
@@ -47,6 +50,67 @@ const getAllCategories = async (query: Record<string, string>) => {
   };
 };
 
+const getProductByCetegory = async (categoryId: string) => {
+  const prismaQueryBuilder = new PrismaQueryBuilder({})
+    .search(["name", "description"])
+    .filter()
+    .sort()
+    .paginate();
+
+  const prismaQuery = prismaQueryBuilder.build();
+
+  const products = await prisma.product.findMany({
+    where: {
+      categoryId,
+    },
+    ...prismaQuery,
+    include: {
+      brand: true,
+      category: true,
+    },
+  });
+  return products;
+};
+
+const getCategoryBySlug = async (slug: string) => {
+  const category = await prisma.category.findUnique({
+    where: { slug },
+    include: {
+      products: true,
+    },
+  });
+  return category;
+};
+
+const getAllProductByCategoryBySlug = async (slug: string) => {
+  const prismaQueryBuilder = new PrismaQueryBuilder({})
+    .search(["name", "description"])
+    .filter()
+    .sort()
+    .paginate();
+
+  const prismaQuery = prismaQueryBuilder.build();
+
+  const category = await prisma.category.findUnique({
+    where: { slug },
+  });
+
+  if (!category) {
+    throw new Error("Category not found");
+  }
+
+  const products = await prisma.product.findMany({
+    where: {
+      categoryId: category.id,
+    },
+    ...prismaQuery,
+    include: {
+      brand: true,
+      category: true,
+    },
+  });
+  return products;
+};
 const getSingleCategory = async (id: string) => {
   const category = await prisma.category.findUnique({
     where: { id },
@@ -59,7 +123,7 @@ const getSingleCategory = async (id: string) => {
 
 const updateCategory = async (
   id: string,
-  categoryData: Partial<ICreateCategory>
+  categoryData: Partial<ICreateCategory>,
 ) => {
   if (categoryData.name) {
     const updatedSlug = generateSlug(categoryData.name);
@@ -87,4 +151,7 @@ export const CategoryService = {
   getSingleCategory,
   updateCategory,
   deleteCategory,
+  getProductByCetegory,
+  getAllProductByCategoryBySlug,
+  getCategoryBySlug,
 };

@@ -13,6 +13,7 @@ export interface IProduct {
   isFeatured?: boolean;
   isTrending?: boolean;
   isBestSeller?: boolean;
+
   isActive?: boolean;
   brandId: string;
   categoryId: string;

@@ -8,9 +8,7 @@ export interface ISection {
   icons?: string | null;
   link?: string | null;
   ctaText?: string | null;
-  isVisible?: boolean | null;
+  isVisible: boolean | string | null | undefined;
   primaryColor?: string | null;
   secondaryColor?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
 }

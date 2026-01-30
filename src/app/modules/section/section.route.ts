@@ -6,32 +6,28 @@ import { multerUpload } from "../../config/multer.config";
 
 const router = Router();
 
-router.get(
-  "/",
-  auth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
-  SectionController.getAllSections
-);
+router.get("/", SectionController.getAllSections);
 router.get(
   "/:id",
   auth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
-  SectionController.getSectionById
+  SectionController.getSectionById,
 );
 router.post(
   "/",
-  multerUpload.array("images"),
   auth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
-  SectionController.createSection
+  multerUpload.array("images"),
+  SectionController.createSection,
 );
 router.patch(
   "/:id",
   multerUpload.array("images"),
   auth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
-  SectionController.updateSection
+  SectionController.updateSection,
 );
 router.delete(
   "/:id",
   auth(UserRole.SUPER_ADMIN),
-  SectionController.deleteSection
+  SectionController.deleteSection,
 );
 
 export const SectionRoute = router;

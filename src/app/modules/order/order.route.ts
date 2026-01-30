@@ -7,16 +7,16 @@ const router = Router();
 router.get(
   "/",
   auth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
-  OrderController.getALlOrders
+  OrderController.getALlOrders,
 );
-router.get("/:id", auth(), OrderController.getOrderBYId);
-router.delete("/:id", auth(), OrderController.orderDelete);
-router.patch("/cancel/:id", auth(), OrderController.orderCancle);
+router.get("/:id", optionalAuth(), OrderController.getOrderBYId);
+router.delete("/:id", optionalAuth(), OrderController.orderDelete);
+router.patch("/cancel/:id", optionalAuth(), OrderController.orderCancle);
 router.post("/", optionalAuth(), OrderController.createOrder);
 router.patch(
   "/:id/status",
   auth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
-  OrderController.updateOrderStatus
+  OrderController.updateOrderStatus,
 );
 
 export const OrderRoute = router;

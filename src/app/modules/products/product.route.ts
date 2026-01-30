@@ -8,23 +8,31 @@ const router = Router();
 
 router.get("/", ProductController.getAllProducts);
 router.get("/:id", ProductController.getProductById);
+router.get("/slug/:slug", ProductController.getProductBySlug);
+router.get("/category/:categoryId", ProductController.getProductByCetegory);
+router.get("/brand/:brandId", ProductController.getProductByBrand);
+router.get("/skintype/:skinTypeId", ProductController.getProductBySkinType);
+router.get(
+  "/skinconcern/:skinConcernId",
+  ProductController.getProductBySkinConcern,
+);
 router.patch(
   "/:id",
   multerUpload.single("thumbleImage"),
   auth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
-  ProductController.updateProduct
+  ProductController.updateProduct,
 );
 
 router.post(
   "/",
   multerUpload.single("thumbleImage"),
   auth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
-  ProductController.createProduct
+  ProductController.createProduct,
 );
 router.delete(
   "/:id",
   auth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
-  ProductController.deleteProduct
+  ProductController.deleteProduct,
 );
 
 export const ProductRoutes = router;

@@ -2,22 +2,28 @@ import { deleteImageFromCLoudinary } from "../../config/cloudinary";
 import { prisma } from "../../config/prisma";
 import { PrismaQueryBuilder } from "../../utility/queryBuilder";
 import { ISection } from "./section.interface";
-
 const createSection = async (section: ISection) => {
+  const isVisible =
+    section.isVisible === "true"
+      ? true
+      : section.isVisible === "false"
+      ? false
+      : undefined;
   const data = {
-    title: section.title,
-    description: section.description,
+    title: section.title || undefined,
+    description: section.description || undefined,
     images: section.images,
     type: section.type ?? undefined,
-    icons: section.icons,
-    link: section.link,
-    ctaText: section.ctaText,
-    isVisible: section.isVisible,
-    primaryColor: section.primaryColor,
-    secondaryColor: section.secondaryColor,
+    icons: section.icons || undefined,
+    link: section.link || undefined,
+    ctaText: section.ctaText || undefined,
+    isVisible,
+    primaryColor: section.primaryColor || undefined,
+    secondaryColor: section.secondaryColor || undefined,
   };
+
   const newSection = await prisma.section.create({
-    data: data,
+    data,
   });
 
   return newSection;
@@ -57,9 +63,27 @@ const updateSection = async (id: string, sectionData: Partial<ISection>) => {
     throw new Error("Section not found");
   }
 
+  let isVisible: boolean | null | undefined;
+  if (sectionData.isVisible === "true") {
+    isVisible = true;
+  } else if (sectionData.isVisible === "false") {
+    isVisible = false;
+  } else if (
+    typeof sectionData.isVisible === "boolean" ||
+    sectionData.isVisible === null ||
+    sectionData.isVisible === undefined
+  ) {
+    isVisible = sectionData.isVisible;
+  }
+
+  const updateData = {
+    ...sectionData,
+    isVisible,
+  };
+
   const updatedSection = await prisma.section.update({
     where: { id },
-    data: sectionData,
+    data: updateData,
   });
 
   if (sectionData.images && existingSection.images) {

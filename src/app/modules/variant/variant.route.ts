@@ -9,24 +9,25 @@ import { createProductVariantSchema } from "./variant.validation";
 
 const router = Router();
 router.get("/", VariantController.getAllVariants);
+router.get("/:id", VariantController.getVariantById);
 router.get("/:sku", VariantController.getVariantBySku);
 router.post(
   "/",
   multerUpload.array("images"),
   auth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
   validateRequest(createProductVariantSchema),
-  VariantController.createdVariant
+  VariantController.createdVariant,
 );
 router.patch(
   "/:id",
   multerUpload.array("images"),
   auth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
-  VariantController.updateVariant
+  VariantController.updateVariant,
 );
 router.delete(
   "/:id",
   auth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
-  VariantController.deleteVariant
+  VariantController.deleteVariant,
 );
 
 export const VariantRoutes = router;

@@ -25,7 +25,7 @@ const createProductVariant = async (data: CreateProductVariant) => {
     size: data.size,
     sku,
     images: data.images,
-    price: product.price || 0,
+    price: data.price || product.price || 0,
     stock: data.stock || 0,
     lowStockThreshold: data.lowStockThreshold || 0,
   };
@@ -66,9 +66,15 @@ const getVariantBySku = async (sku: string) => {
   return variant;
 };
 
+const getVariaantById = async (id: string) => {
+  const variant = await prisma.productVariant.findUnique({
+    where: { id },
+  });
+  return variant;
+};
 const updateVariant = async (
   id: string,
-  variantData: Partial<CreateProductVariant>
+  variantData: Partial<CreateProductVariant>,
 ) => {
   const product = await prisma.product.findUnique({
     where: { id: variantData.productId || "" },
@@ -126,4 +132,5 @@ export const VariantService = {
   getVariantBySku,
   updateVariant,
   deleteVariant,
+  getVariaantById,
 };

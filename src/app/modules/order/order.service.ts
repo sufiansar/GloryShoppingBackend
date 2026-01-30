@@ -7,60 +7,108 @@ import {
 import { prisma } from "../../config/prisma";
 import { PrismaQueryBuilder } from "../../utility/queryBuilder";
 import { sendEmail } from "../../utility/sendEmail";
-import { ICartItem } from "../cart/cart.interface";
-import { DeliveryInput } from "./order.interface";
+import { CheckoutInput, DeliveryInput } from "./order.interface";
 import { v4 as uuidv4 } from "uuid";
 
-const createOrder = async (
+export const createOrder = async (
   userId: string | undefined,
-  cartItems: ICartItem[],
-  delivery: DeliveryInput
+  input: CheckoutInput,
 ) => {
-  const guestId = userId ? undefined : uuidv4();
+  const guestId = !userId && input.type === "CART" ? uuidv4() : undefined;
 
   const order = await prisma.$transaction(async (tx) => {
-    const productVariants = await tx.productVariant.findMany({
-      where: { id: { in: cartItems.map((i) => i.variantId) } },
-      include: { product: { select: { name: true } } },
-    });
+    let items: {
+      variantId: string;
+      quantity: number;
+      price: number;
+      productName: string;
+      cartItemId?: string;
+    }[] = [];
 
-    const productTotal = cartItems.reduce((sum, item) => {
-      const variant = productVariants.find((v) => v.id === item.variantId);
-      if (!variant)
-        throw new Error(`Product variant not found: ${item.variantId}`);
-      return sum + item.quantity * variant.price!;
-    }, 0);
+    if (input.type === "CART") {
+      if (!input.cartItemIds?.length) {
+        throw new Error("Cart items are required");
+      }
 
-    const deliveryCharge = delivery.deliveryCharge ?? 0;
+      const cartItems = await tx.cartItem.findMany({
+        where: {
+          id: { in: input.cartItemIds },
+        },
+        include: {
+          variant: {
+            include: {
+              product: { select: { name: true } },
+            },
+          },
+        },
+      });
+
+      if (!cartItems.length) {
+        throw new Error("Cart items not found");
+      }
+
+      items = cartItems.map((item) => ({
+        variantId: item.variantId,
+        quantity: item.quantity,
+        price: item.variant.price!,
+        productName: item.variant.product.name,
+        cartItemId: item.id,
+      }));
+    }
+
+    if (input.type === "DIRECT") {
+      if (!input.variantId || !input.quantity) {
+        throw new Error("VariantId and quantity are required");
+      }
+
+      const variant = await tx.productVariant.findUnique({
+        where: { id: input.variantId },
+        include: {
+          product: { select: { name: true } },
+        },
+      });
+
+      if (!variant || !variant.price) {
+        throw new Error("Product variant not found");
+      }
+
+      items = [
+        {
+          variantId: variant.id,
+          quantity: input.quantity,
+          price: variant.price,
+          productName: variant.product.name,
+        },
+      ];
+    }
+
+    const productTotal = items.reduce(
+      (sum, i) => sum + i.quantity * i.price,
+      0,
+    );
+
+    const deliveryCharge = input.delivery.deliveryCharge ?? 0;
     const finalAmount = productTotal + deliveryCharge;
 
     const orderData: any = {
       status: "PENDING",
       amount: finalAmount,
+
       items: {
         createMany: {
-          data: cartItems.map((item) => {
-            const variant = productVariants.find(
-              (v) => v.id === item.variantId
-            )!;
-            return {
-              quantity: item.quantity,
-              price: variant.price!,
-              productVariantId: variant.id,
-              // product: variant.product.name,
-            };
-          }),
+          data: items.map((i) => ({
+            quantity: i.quantity,
+            price: i.price,
+            productVariantId: i.variantId,
+            product: i.productName,
+          })),
         },
       },
+
       delivery: {
         create: {
-          name: delivery.name,
-          phone: delivery.phone,
-          email: delivery.email,
-          address: delivery.address,
-          city: delivery.city,
-          postalCode: delivery.postalCode,
-          deliveryCharge: deliveryCharge,
+          ...input.delivery,
+          deliveryCharge,
           status: "PROCESSING",
         },
       },
@@ -68,7 +116,9 @@ const createOrder = async (
 
     if (userId) {
       orderData.userId = userId;
-    } else {
+    }
+
+    if (!userId && guestId) {
       orderData.guestId = guestId;
     }
 
@@ -79,9 +129,7 @@ const createOrder = async (
           include: {
             variant: {
               include: {
-                product: {
-                  select: { name: true },
-                },
+                product: { select: { name: true } },
               },
             },
           },
@@ -90,21 +138,25 @@ const createOrder = async (
       },
     });
 
-    await tx.cartItem.deleteMany({
-      where: {
-        id: {
-          in: cartItems
-            .map((i) => i.id)
-            .filter((id): id is string => id !== undefined),
+    if (input.type === "CART") {
+      await tx.cartItem.deleteMany({
+        where: {
+          id: {
+            in: items.map((i) => i.cartItemId).filter(Boolean) as string[],
+          },
         },
-      },
-    });
+      });
+    }
 
-    return { ...order, productTotal, deliveryCharge };
+    return {
+      ...order,
+      productTotal,
+      deliveryCharge,
+    };
   });
 
   await sendEmail({
-    to: delivery.email,
+    to: input.delivery.email,
     subject: "Your Order is Confirmed",
     templateName: "order-confirmation",
     templateData: {
@@ -115,9 +167,9 @@ const createOrder = async (
         grandTotal: order.amount,
       },
       customer: {
-        name: delivery.name ?? "Customer",
-        email: delivery.email,
-        phone: delivery.phone,
+        name: input.delivery.name ?? "Customer",
+        email: input.delivery.email,
+        phone: input.delivery.phone,
       },
       shipping: {
         address: order.delivery?.address,
@@ -136,60 +188,92 @@ const createOrder = async (
   return order;
 };
 
-const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
-  return await prisma.$transaction(async (tx) => {
-    let deliveryStatus: DeliveryStatus;
-    switch (status) {
-      case OrderStatus.PENDING:
-        deliveryStatus = DeliveryStatus.PROCESSING;
-        break;
-      case OrderStatus.SHIPPED:
-        deliveryStatus = DeliveryStatus.ON_THE_WAY;
-        break;
-      case OrderStatus.COMPLETED:
-        deliveryStatus = DeliveryStatus.DELIVERED;
-        break;
-      case OrderStatus.CANCELLED:
-        deliveryStatus = DeliveryStatus.CANCELED;
-        break;
-      default:
-        deliveryStatus = DeliveryStatus.PROCESSING;
-    }
+export const updateOrderStatus = async (
+  orderId: string,
+  status: OrderStatus,
+  adminId: string,
+) => {
+  const admin = await prisma.user.findUnique({
+    where: { id: adminId },
+    select: { id: true, role: true },
+  });
 
-    const updatedOrder = await tx.order.update({
+  if (
+    !admin ||
+    (admin.role !== UserRole.ADMIN && admin.role !== UserRole.SUPER_ADMIN)
+  ) {
+    throw new Error("Unauthorized");
+  }
+
+  const updatedOrder = await prisma.$transaction(async (tx) => {
+    const order = await tx.order.findUnique({
       where: { id: orderId },
-      data: {
-        status,
-        delivery: {
-          update: { status: deliveryStatus },
-        },
-      },
       include: { delivery: true },
     });
 
-    const email = updatedOrder.delivery?.email;
-    if (email) {
-      await sendEmail({
-        to: email,
-        subject: "Your Order Status Updated",
-        templateName: "order-status-updated",
-        templateData: {
-          order: updatedOrder,
-          customer: {
-            name: updatedOrder.delivery?.name ?? "Customer",
-            email,
-            phone: updatedOrder.delivery?.phone ?? "N/A",
-          },
-          newStatus: status,
-        },
-      });
+    if (!order) {
+      throw new Error("Order not found");
     }
 
-    return updatedOrder;
+    const deliveryStatusMap: Record<OrderStatus, DeliveryStatus> = {
+      PENDING: DeliveryStatus.PROCESSING,
+      SHIPPED: DeliveryStatus.ON_THE_WAY,
+      COMPLETED: DeliveryStatus.DELIVERED,
+      CANCELLED: DeliveryStatus.CANCELED,
+      PAID: DeliveryStatus.DELIVERED,
+    };
+
+    const updated = await tx.order.update({
+      where: { id: orderId },
+      data: {
+        status,
+        ...(order.delivery && {
+          delivery: {
+            update: {
+              status: deliveryStatusMap[status] ?? DeliveryStatus.PROCESSING,
+            },
+          },
+        }),
+      },
+      include: {
+        delivery: true,
+        items: true,
+      },
+    });
+
+    return updated;
   });
+
+  if (updatedOrder.delivery?.email) {
+    await sendEmail({
+      to: updatedOrder.delivery.email,
+      subject: "Your Order Status Updated",
+      templateName: "order-status-updated",
+      templateData: {
+        order: updatedOrder,
+        newStatus: status,
+        customer: {
+          name: updatedOrder.delivery.name ?? "Customer",
+          email: updatedOrder.delivery.email,
+          phone: updatedOrder.delivery.phone ?? "N/A",
+        },
+        shipping: {
+          address: updatedOrder.delivery.address,
+          city: updatedOrder.delivery.city,
+          postalCode: updatedOrder.delivery.postalCode,
+        },
+      },
+    });
+  }
+
+  return updatedOrder;
 };
 
-const getOrderBYId = async (orderId: string) => {
+const getOrderBYId = async (
+  orderId: string,
+  userId?: string,
+  guestId?: string,
+) => {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: {
@@ -197,8 +281,20 @@ const getOrderBYId = async (orderId: string) => {
       delivery: true,
     },
   });
+
+  if (!order) throw new Error("Order not found");
+
+  if (order.userId && userId && order.userId !== userId) {
+    throw new Error("Unauthorized");
+  }
+
+  if (order.guestId && guestId && order.guestId !== guestId) {
+    throw new Error("Unauthorized");
+  }
+
   return order;
 };
+
 const getALlOrders = async (query: Record<string, string>, userId?: string) => {
   const isUserExists = await prisma.user.findUnique({
     where: { id: userId || "" },
@@ -236,9 +332,28 @@ const getALlOrders = async (query: Record<string, string>, userId?: string) => {
   };
 };
 
-const orderCancle = async (orderId: string) => {
-  return await prisma.$transaction(async (tx) => {
-    const order = await tx.order.update({
+const orderCancle = async (
+  orderId: string,
+  userId?: string,
+  guestId?: string,
+) => {
+  return prisma.$transaction(async (tx) => {
+    const order = await tx.order.findUnique({
+      where: { id: orderId },
+      include: { delivery: true },
+    });
+
+    if (!order) throw new Error("Order not found");
+
+    if (order.userId && userId && order.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
+
+    if (order.guestId && guestId && order.guestId !== guestId) {
+      throw new Error("Unauthorized");
+    }
+
+    const updatedOrder = await tx.order.update({
       where: { id: orderId },
       data: {
         status: OrderStatus.CANCELLED,
@@ -248,31 +363,39 @@ const orderCancle = async (orderId: string) => {
       },
       include: { delivery: true },
     });
-    console.log("Delivery email:", order.delivery?.email);
+
     await sendEmail({
-      to: order.delivery?.email!,
+      to: updatedOrder.delivery?.email!,
       subject: "Your Order has been Cancelled",
       templateName: "order-cancelled",
       templateData: {
-        order,
+        order: updatedOrder,
         customer: {
-          name: order.delivery?.name ?? "Customer",
-          email: order.delivery?.email ?? "Email",
-          phone: order.delivery?.phone!,
+          name: updatedOrder.delivery?.name ?? "Customer",
+          email: updatedOrder.delivery?.email!,
+          phone: updatedOrder.delivery?.phone!,
         },
       },
     });
 
-    return order;
+    return updatedOrder;
   });
 };
 
-const orderDelete = async (orderId: string) => {
-  const order = await prisma.order.delete({
+const orderDelete = async (orderId: string, adminId: string) => {
+  const admin = await prisma.user.findUnique({
+    where: { id: adminId },
+  });
+
+  if (admin?.role !== UserRole.SUPER_ADMIN) {
+    throw new Error("Only SUPER_ADMIN can delete orders");
+  }
+
+  return prisma.order.delete({
     where: { id: orderId },
   });
-  return order;
 };
+
 export const OrderService = {
   createOrder,
   updateOrderStatus,

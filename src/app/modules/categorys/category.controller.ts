@@ -18,7 +18,7 @@ const createCategory = catchAsync(async (req: Request, res: Response) => {
 
 const getAllCategories = catchAsync(async (req: Request, res: Response) => {
   const result = await CategoryService.getAllCategories(
-    req.query as Record<string, string>
+    req.query as Record<string, string>,
   );
 
   sendResponse(res, {
@@ -33,6 +33,44 @@ const getAllCategories = catchAsync(async (req: Request, res: Response) => {
 const getSingleCategory = catchAsync(async (req: Request, res: Response) => {
   const id = req.params.id;
   const result = await CategoryService.getSingleCategory(id);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Category retrieved successfully",
+    data: result,
+  });
+});
+
+const getAllProductByCategoryBySlug = catchAsync(
+  async (req: Request, res: Response) => {
+    const slug = req.params.slug;
+    const result = await CategoryService.getAllProductByCategoryBySlug(slug);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Products retrieved successfully",
+      data: result,
+    });
+  },
+);
+
+const getProductByCetegory = catchAsync(async (req: Request, res: Response) => {
+  const categoryId = req.params.id;
+  const result = await CategoryService.getProductByCetegory(categoryId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Products retrieved successfully",
+    data: result,
+  });
+});
+
+const getCategoryBySlug = catchAsync(async (req: Request, res: Response) => {
+  const slug = req.params.slug;
+  const result = await CategoryService.getCategoryBySlug(slug);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -71,6 +109,9 @@ export const CategoryController = {
   createCategory,
   getAllCategories,
   getSingleCategory,
+  getProductByCetegory,
+  getAllProductByCategoryBySlug,
+  getCategoryBySlug,
   updateCategory,
   deleteCategory,
 };

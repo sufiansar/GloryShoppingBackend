@@ -6,31 +6,64 @@ import { OrderService } from "./order.service";
 import AppError from "../../errorHelpers/AppError";
 
 const createOrder = catchAsync(async (req: Request, res: Response) => {
-  const userId = req.user?.id || undefined;
-  const { cartItems, delivery } = req.body;
+  const userId = req.user?.id;
+  const { type, cartItemIds, variantId, quantity, delivery } = req.body;
 
-  if (!cartItems || !cartItems.length) {
-    throw new AppError(400, "Cart items are required");
+  if (!type || !["CART", "DIRECT"].includes(type)) {
+    throw new AppError(400, "Checkout type is required");
   }
 
   if (!delivery?.email || !delivery?.phone || !delivery?.address) {
     throw new AppError(400, "Delivery information is incomplete");
   }
 
-  const result = await OrderService.createOrder(userId, cartItems, delivery);
+  // CART checkout validation
+  if (type === "CART") {
+    if (!cartItemIds || !Array.isArray(cartItemIds) || !cartItemIds.length) {
+      throw new AppError(400, "Cart items are required");
+    }
+  }
+
+  // DIRECT checkout validation
+  if (type === "DIRECT") {
+    if (!variantId || !quantity) {
+      throw new AppError(400, "VariantId and quantity are required");
+    }
+  }
+
+  const result = await OrderService.createOrder(userId, {
+    type,
+    cartItemIds,
+    variantId,
+    quantity,
+    delivery,
+  });
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     success: true,
-    message: "Order created successfully",
+    message:
+      type === "CART"
+        ? "Order placed from cart successfully"
+        : "Order placed successfully",
     data: result,
   });
 });
 
 const updateOrderStatus = catchAsync(async (req: Request, res: Response) => {
   const orderId = req.params.id;
-  const status = req.body.status;
-  const result = await OrderService.updateOrderStatus(orderId, status);
+  const { status } = req.body;
+  const adminId = req.user?.id;
+
+  if (!status) {
+    throw new AppError(400, "Order status is required");
+  }
+
+  const result = await OrderService.updateOrderStatus(
+    orderId,
+    status,
+    adminId!,
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -54,7 +87,10 @@ const getALlOrders = catchAsync(async (req: Request, res: Response) => {
 });
 const getOrderBYId = catchAsync(async (req: Request, res: Response) => {
   const orderId = req.params.id;
-  const result = await OrderService.getOrderBYId(orderId);
+  const userId = req.user?.id;
+  const guestId = req.headers["x-guest-id"] as string | undefined;
+
+  const result = await OrderService.getOrderBYId(orderId, userId, guestId);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -76,8 +112,9 @@ const orderCancle = catchAsync(async (req: Request, res: Response) => {
   });
 });
 const orderDelete = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
   const orderId = req.params.id;
-  const result = await OrderService.orderDelete(orderId);
+  const result = await OrderService.orderDelete(orderId, userId!);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

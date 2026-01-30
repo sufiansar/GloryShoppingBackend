@@ -25,3 +25,12 @@ export interface DeliveryInput {
   postalCode?: string;
   deliveryCharge?: number;
 }
+type CheckoutType = "CART" | "DIRECT";
+
+export interface CheckoutInput {
+  type: CheckoutType;
+  cartItemIds?: string[];
+  variantId?: string;
+  quantity?: number;
+  delivery: DeliveryInput;
+}

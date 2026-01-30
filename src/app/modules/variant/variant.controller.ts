@@ -22,7 +22,7 @@ const createdVariant = catchAsync(async (req: Request, res: Response) => {
 
 const getAllVariants = catchAsync(async (req: Request, res: Response) => {
   const result = await VariantService.getAllVariants(
-    req.query as Record<string, string>
+    req.query as Record<string, string>,
   );
 
   sendResponse(res, {
@@ -37,6 +37,18 @@ const getAllVariants = catchAsync(async (req: Request, res: Response) => {
 const getVariantBySku = catchAsync(async (req: Request, res: Response) => {
   const { sku } = req.params;
   const result = await VariantService.getVariantBySku(sku);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Product variant retrieved successfully",
+    data: result,
+  });
+});
+
+const getVariantById = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const result = await VariantService.getVariaantById(id);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -83,4 +95,5 @@ export const VariantController = {
   getVariantBySku,
   updateVariant,
   deleteVariant,
+  getVariantById,
 };

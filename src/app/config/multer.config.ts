@@ -26,4 +26,10 @@ const storage = new CloudinaryStorage({
   },
 });
 
-export const multerUpload = multer({ storage: storage });
+export const multerUpload = multer({
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+    files: 5,
+  },
+});
