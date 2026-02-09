@@ -4,8 +4,9 @@ import { PrismaQueryBuilder } from "../../utility/queryBuilder";
 import { generateSlug } from "../../utility/slugGenerate";
 import { ICreateCategory } from "./category.interface";
 import { paginationHelper } from "../../utility/paginationField";
-import { Prisma } from "../../../generated/prisma";
+
 import { CategorySearchAbleFields } from "./category.filterableField";
+import { Prisma } from "@prisma/client";
 
 const createCategory = async (categoryData: ICreateCategory) => {
   if (!categoryData.images) {

@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { BrandController } from "./brand.controller";
 import auth from "../../middlewares/checkAuth";
-import { UserRole } from "../../../generated/prisma";
+
 import { multerUpload } from "../../config/multer.config";
+import { UserRole } from "@prisma/client";
 
 const router = Router();
 router.get("/", BrandController.getAllBrands);

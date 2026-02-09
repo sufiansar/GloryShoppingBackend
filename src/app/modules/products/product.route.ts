@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { ProductController } from "./product.controller";
 import auth from "../../middlewares/checkAuth";
-import { UserRole } from "../../../generated/prisma";
+
 import { multerUpload } from "../../config/multer.config";
+import { UserRole } from "@prisma/client";
 
 const router = Router();
 

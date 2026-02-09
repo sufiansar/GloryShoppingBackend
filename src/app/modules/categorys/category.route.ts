@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { CategoryController } from "./category.controller";
 import auth from "../../middlewares/checkAuth";
-import { UserRole } from "../../../generated/prisma";
+
 import { multerUpload } from "../../config/multer.config";
+import { UserRole } from "@prisma/client";
 
 const router = Router();
 router.get("/", CategoryController.getAllCategories);

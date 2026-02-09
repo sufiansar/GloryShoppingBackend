@@ -148,7 +148,7 @@ const addProductSkin = async (
     throw new Error("productId, skinConcernIds, and skinTypeIds are required");
   }
 
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     const productSkinConcern = await tx.productSkinConcern.createMany({
       data: skinConcernIds.map((id) => ({
         productId,

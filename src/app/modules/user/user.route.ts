@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { UserController } from "./user.controller";
 import auth from "../../middlewares/checkAuth";
-import { UserRole } from "../../../generated/prisma";
+import { UserRole } from "@prisma/client";
 
 const router = Router();
 router.get("/my-profile", auth(), UserController.getMyProfile);
@@ -12,12 +12,12 @@ router.patch("/:id", UserController.updateUser);
 router.patch(
   "/role-update/:id",
   auth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
-  UserController.userRoleUpdate
+  UserController.userRoleUpdate,
 );
 router.delete(
   "/:id",
   auth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
-  UserController.deleteUser
+  UserController.deleteUser,
 );
 
 export const UserRoute = router;

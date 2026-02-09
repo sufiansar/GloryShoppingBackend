@@ -1,4 +1,4 @@
-import { SECTION_TYPE } from "../../../generated/prisma";
+import { SECTION_TYPE } from "@prisma/client";
 
 export interface ISection {
   type?: SECTION_TYPE;

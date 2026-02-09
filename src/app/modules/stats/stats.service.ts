@@ -1,4 +1,4 @@
-import { $Enums } from "../../../generated/prisma";
+import { $Enums } from "@prisma/client";
 import { prisma } from "../../config/prisma";
 
 const calculateStats = (orders: any[]) => ({
@@ -65,7 +65,7 @@ const getBestProduct = async () => {
   const variants = await prisma.productVariant.findMany({
     where: {
       id: {
-        in: bestVariants.map((v) => v.productVariantId),
+        in: bestVariants.map((v: any) => v.productVariantId),
       },
     },
     include: {
@@ -75,8 +75,8 @@ const getBestProduct = async () => {
     },
   });
 
-  return bestVariants.map((item) => {
-    const variant = variants.find((v) => v.id === item.productVariantId);
+  return bestVariants.map((item: any) => {
+    const variant = variants.find((v: any) => v.id === item.productVariantId);
 
     return {
       productVariantId: item.productVariantId,
@@ -106,7 +106,7 @@ const cancelledProducts = async () => {
     take: 5,
   });
 
-  return cancelled.map((item) => ({
+  return cancelled.map((item: any) => ({
     productVariantId: item.productVariantId,
     totalCancelled: item._sum.quantity ?? 0,
   }));
@@ -151,14 +151,17 @@ const getCategoryStats = async () => {
     },
   });
 
-  return categories.map((category) => {
-    const totalSold = category.products.reduce((sum, product) => {
+  return categories.map((category: any) => {
+    const totalSold = category.products.reduce((sum: any, product: any) => {
       return (
         sum +
-        product.variants.reduce((vSum, variant) => {
+        product.variants.reduce((vSum: any, variant: any) => {
           return (
             vSum +
-            variant.orderItems.reduce((iSum, item) => iSum + item.quantity, 0)
+            variant.orderItems.reduce(
+              (iSum: any, item: any) => iSum + item.quantity,
+              0,
+            )
           );
         }, 0)
       );
@@ -189,9 +192,9 @@ const perCategoryStats = async () => {
     });
 
     let totalSold = 0;
-    products.forEach((product) => {
-      product.variants.forEach((variant) => {
-        variant.orderItems.forEach((item) => {
+    products.forEach((product: any) => {
+      product.variants.forEach((variant: any) => {
+        variant.orderItems.forEach((item: any) => {
           totalSold += item.quantity;
         });
       });

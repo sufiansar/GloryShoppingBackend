@@ -92,7 +92,7 @@ async function serverStart() {
     // Start the server AFTER seeding
     server = app.listen(dbConfig.port, () => {
       console.log(
-        `\n🚀 TravelBuddyServer is running on http://localhost:${dbConfig.port}`,
+        `\n🚀 GloryShoppingBackend is running on http://localhost:${dbConfig.port}`,
       );
       console.log(`🌱 Environment: ${dbConfig.node_env}`);
       console.log(`💾 Database: Connected`);
@@ -110,7 +110,7 @@ async function serverStart() {
 
       if (server) {
         server.close(() => {
-          console.log("✅ TravelBuddyServer closed gracefully");
+          console.log("✅ GloryShoppingBackend closed gracefully");
           if (options?.exit) process.exit(0);
         });
       } else if (options?.exit) {

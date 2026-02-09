@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { IngredientController } from "./Ingredient.controller";
 import auth from "../../middlewares/checkAuth";
-import { UserRole } from "../../../generated/prisma";
+import { UserRole } from "@prisma/client";
 
 const router = Router();
 router.get(

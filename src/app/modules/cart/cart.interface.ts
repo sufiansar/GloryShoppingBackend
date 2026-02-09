@@ -2,10 +2,9 @@ import {
   Cart,
   CART_EVENT,
   CART_STATUS,
-  CartItem,
   ProductVariant,
   User,
-} from "../../../generated/prisma";
+} from "@prisma/client";
 
 export interface ICart {
   userId?: string | undefined;

@@ -1,4 +1,4 @@
-import { Prisma } from "../../../generated/prisma";
+import { Prisma } from "@prisma/client";
 import { deleteImageFromCLoudinary } from "../../config/cloudinary";
 import { prisma } from "../../config/prisma";
 import AppError from "../../errorHelpers/AppError";
@@ -660,18 +660,21 @@ const getBestSellingProducts = async (
 
   // 🔥 calculate & sort by real sales
   const bestSelling = products
-    .map((product) => {
-      const totalSold = product.variants.reduce((pSum, variant) => {
+    .map((product: any) => {
+      const totalSold = product.variants.reduce((pSum: any, variant: any) => {
         return (
           pSum +
-          variant.orderItems.reduce((vSum, item) => vSum + item.quantity, 0)
+          variant.orderItems.reduce(
+            (vSum: any, item: any) => vSum + item.quantity,
+            0,
+          )
         );
       }, 0);
 
       return { ...product, totalSold };
     })
-    .filter((p) => p.totalSold > 0)
-    .sort((a, b) => b.totalSold - a.totalSold);
+    .filter((p: any) => p.totalSold > 0)
+    .sort((a: any, b: any) => b.totalSold - a.totalSold);
 
   // 📄 pagination after accurate sorting
   const paginatedData = bestSelling.slice(skip, skip + limit);
@@ -1039,7 +1042,7 @@ const updateProduct = async (id: string, productData: IProduct) => {
 };
 
 const deleteProduct = async (id: string) => {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     const product = await tx.product.findUnique({ where: { id } });
     if (!product) {
       throw new Error("Product not found");

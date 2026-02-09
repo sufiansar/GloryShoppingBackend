@@ -1,4 +1,5 @@
-import { ProductIngredient, SafetyLevel } from "../../../generated/prisma";
+import { ProductIngredient, SafetyLevel } from "@prisma/client";
+
 
 export interface IIngredient {
   id?: string;

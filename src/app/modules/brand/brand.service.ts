@@ -1,4 +1,4 @@
-import { Prisma } from "../../../generated/prisma";
+import { Prisma } from "@prisma/client";
 import { deleteImageFromCLoudinary } from "../../config/cloudinary";
 import { prisma } from "../../config/prisma";
 import { paginationHelper } from "../../utility/paginationField";
@@ -192,7 +192,7 @@ const updateBrand = async (id: string, brandData: any) => {
 };
 
 const deleteBrand = async (id: string) => {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     const brand = await prisma.brand.findUnique({ where: { id } });
     if (!brand) {
       throw new Error("Brand not found");

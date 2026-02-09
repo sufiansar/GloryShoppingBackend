@@ -1,4 +1,4 @@
-import { Prisma } from "../../../generated/prisma";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../../config/prisma";
 import { paginationHelper } from "../../utility/paginationField";
 import { PrismaQueryBuilder } from "../../utility/queryBuilder";

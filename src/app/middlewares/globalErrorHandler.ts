@@ -1,7 +1,7 @@
+import { Prisma } from "@prisma/client";
 import { NextFunction, Request, Response } from "express";
 import httpStatus from "http-status-codes";
 import { ZodError } from "zod";
-import { Prisma } from "../../generated/prisma/client";
 
 /**
  * Sanitize error messages for production
@@ -25,7 +25,7 @@ const globalErrorHandler = (
   err: any,
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   console.error("Global Error:", err);
 
@@ -106,7 +106,7 @@ const globalErrorHandler = (
   // Additional check for missing unique field in findUnique (optional)
   if (
     err.message?.includes(
-      "Argument `where` of type UserWhereUniqueInput needs at least one of"
+      "Argument `where` of type UserWhereUniqueInput needs at least one of",
     )
   ) {
     statusCode = httpStatus.BAD_REQUEST;

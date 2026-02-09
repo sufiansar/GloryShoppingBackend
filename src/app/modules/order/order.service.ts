@@ -1,10 +1,3 @@
-import { send } from "process";
-import {
-  DeliveryStatus,
-  OrderStatus,
-  Prisma,
-  UserRole,
-} from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
 import { PrismaQueryBuilder } from "../../utility/queryBuilder";
 import { sendEmail } from "../../utility/sendEmail";
@@ -12,6 +5,7 @@ import { CheckoutInput, DeliveryInput } from "./order.interface";
 import { v4 as uuidv4 } from "uuid";
 import { paginationHelper } from "../../utility/paginationField";
 import { OrderSearchAbleFields } from "./order.constant";
+import { DeliveryStatus, OrderStatus, Prisma, UserRole } from "@prisma/client";
 
 export const createOrder = async (
   userId: string | undefined,
@@ -19,7 +13,7 @@ export const createOrder = async (
 ) => {
   const guestId = !userId && input.type === "CART" ? uuidv4() : undefined;
 
-  const order = await prisma.$transaction(async (tx) => {
+  const order = await prisma.$transaction(async (tx: any) => {
     let items: {
       variantId: string;
       quantity: number;
@@ -50,7 +44,7 @@ export const createOrder = async (
         throw new Error("Cart items not found");
       }
 
-      items = cartItems.map((item) => ({
+      items = cartItems.map((item: any) => ({
         variantId: item.variantId,
         quantity: item.quantity,
         price: item.variant.price!,
@@ -180,7 +174,7 @@ export const createOrder = async (
         postalCode: order.delivery?.postalCode,
         phone: order.delivery?.phone,
       },
-      items: order.items.map((item) => ({
+      items: order.items.map((item: any) => ({
         name: item.variant?.product.name || "Product",
         quantity: item.quantity,
         price: item.price,
@@ -208,7 +202,7 @@ export const updateOrderStatus = async (
     throw new Error("Unauthorized");
   }
 
-  const updatedOrder = await prisma.$transaction(async (tx) => {
+  const updatedOrder = await prisma.$transaction(async (tx: any) => {
     const order = await tx.order.findUnique({
       where: { id: orderId },
       include: { delivery: true },
@@ -383,7 +377,7 @@ const orderCancle = async (
   userId?: string,
   guestId?: string,
 ) => {
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx: any) => {
     const order = await tx.order.findUnique({
       where: { id: orderId },
       include: { delivery: true },

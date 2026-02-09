@@ -1,4 +1,4 @@
-import { CART_EVENT, CART_STATUS } from "../../../generated/prisma";
+import { CART_EVENT, CART_STATUS } from "@prisma/client";
 import { prisma } from "../../config/prisma";
 
 export const addToCart = async (
@@ -29,7 +29,7 @@ export const addToCart = async (
   const variant = product.variants[0];
   const variantId = variant.id;
 
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx: any) => {
     let cart;
     if (userId) {
       cart = await tx.cart.upsert({
@@ -117,7 +117,7 @@ const updateCartItem = async (
 
   const variantId = product.variants[0].id;
 
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx: any) => {
     const cart = await tx.cart.findFirst({
       where: {
         status: CART_STATUS.ACTIVE,
@@ -230,7 +230,7 @@ const removeCartItem = async (
     throw new Error("Cart item not found");
   }
 
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: any) => {
     await tx.cartItem.delete({
       where: { id: cartItem.id },
     });
@@ -331,7 +331,10 @@ const getCartCount = async (
     return { count: 0 };
   }
 
-  const count = cart.cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const count = cart.cartItems.reduce(
+    (sum: any, item: any) => sum + item.quantity,
+    0,
+  );
   return { count };
 };
 export const CartService = {

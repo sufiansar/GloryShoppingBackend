@@ -1,8 +1,7 @@
 import bcryptjs from "bcryptjs";
 import dbConfig from "../config/db.config";
 import { prisma } from "../config/prisma";
-import { UserRole } from "../../generated/prisma";
-import { IUser } from "../modules/user/user.interface";
+import { UserRole } from "@prisma/client";
 
 export const seedSuperAdmin = async () => {
   try {
@@ -21,7 +20,7 @@ export const seedSuperAdmin = async () => {
 
     const hashedPassword = await bcryptjs.hash(
       dbConfig.superAdmin.superAdmin_password!,
-      Number(dbConfig.bcryptJs_salt)
+      Number(dbConfig.bcryptJs_salt),
     );
 
     const superadmin = await prisma.user.create({

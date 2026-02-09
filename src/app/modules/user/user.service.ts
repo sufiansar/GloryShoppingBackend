@@ -1,4 +1,4 @@
-import { UserRole } from "../../../generated/prisma";
+import { UserRole } from "@prisma/client";
 import { deleteImageFromCLoudinary } from "../../config/cloudinary";
 import dbConfig from "../../config/db.config";
 import { prisma } from "../../config/prisma";
@@ -19,7 +19,7 @@ const createUser = async (userData: IUser) => {
 
   const hashedPassword = await bcrypt.hash(
     userData.passwordHash,
-    Number(dbConfig.bcryptJs_salt)
+    Number(dbConfig.bcryptJs_salt),
   );
 
   const newUser = await prisma.user.create({
@@ -82,7 +82,7 @@ const userRoleUpdate = async (userId: string, role: UserRole) => {
   if (user.role !== UserRole.SUPER_ADMIN) {
     throw new AppError(
       httpStatus.FORBIDDEN,
-      "Only Super Admin can change user roles"
+      "Only Super Admin can change user roles",
     );
   }
   const updatedUser = await prisma.user.update({
@@ -110,7 +110,7 @@ const updateUser = async (userId: string, updateData: IUserUpdate) => {
   if (updateData.passwordHash) {
     const hashedPassword = await bcrypt.hash(
       updateData.passwordHash,
-      Number(dbConfig.bcryptJs_salt)
+      Number(dbConfig.bcryptJs_salt),
     );
     updateData.passwordHash = hashedPassword;
   }

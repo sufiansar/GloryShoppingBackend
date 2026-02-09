@@ -111,7 +111,7 @@ const updateVariant = async (
 };
 
 const deleteVariant = async (id: string) => {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     const variant = await tx.productVariant.findUnique({ where: { id } });
     if (!variant) {
       throw new Error("Variant not found");

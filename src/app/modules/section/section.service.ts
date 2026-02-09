@@ -91,7 +91,7 @@ const updateSection = async (id: string, sectionData: Partial<ISection>) => {
 
   if (sectionData.images && existingSection.images) {
     const imagesToDelete = existingSection.images.filter(
-      (img) => !sectionData.images?.includes(img),
+      (img: any) => !sectionData.images?.includes(img),
     );
     for (const imageUrl of imagesToDelete) {
       await deleteImageFromCLoudinary(imageUrl);

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { OrderController } from "./order.controller";
 import auth, { optionalAuth } from "../../middlewares/checkAuth";
-import { UserRole } from "../../../generated/prisma";
+import { UserRole } from "@prisma/client";
 
 const router = Router();
 router.get(

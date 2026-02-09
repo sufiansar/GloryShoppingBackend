@@ -1,13 +1,13 @@
 import { Router } from "express";
 import { AddressController } from "./address.controller";
 import auth from "../../middlewares/checkAuth";
-import { UserRole } from "../../../generated/prisma";
+import { UserRole } from "@prisma/client";
 
 const router = Router();
 router.get(
   "/",
   auth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
-  AddressController.getAllAddresses
+  AddressController.getAllAddresses,
 );
 router.get("/:id", AddressController.getAddressById);
 router.post("/", AddressController.createAddress);

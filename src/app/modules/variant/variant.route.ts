@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { ProductController } from "../products/product.controller";
 import auth from "../../middlewares/checkAuth";
-import { UserRole } from "../../../generated/prisma";
+
 import { VariantController } from "./variant.controller";
 import { multerUpload } from "../../config/multer.config";
 import { validateRequest } from "../../middlewares/validateRequest";
 import { createProductVariantSchema } from "./variant.validation";
+import { UserRole } from "@prisma/client";
 
 const router = Router();
 router.get("/", VariantController.getAllVariants);

@@ -1,4 +1,4 @@
-import { UserRole } from "../../../generated/prisma";
+import { UserRole } from "@prisma/client";
 import { prisma } from "../../config/prisma";
 import { PrismaQueryBuilder } from "../../utility/queryBuilder";
 import { IReview } from "./review.interface";
