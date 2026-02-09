@@ -1,46 +1,40 @@
 import { $Enums } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
 
-const calculateStats = (orders: any[]) => {
-  return {
-    totalOrders: orders.length,
-    totalRevenue: orders.reduce((sum, order) => sum + (order.total || 0), 0),
-  };
-};
+const calculateStats = (orders: any[]) => ({
+  totalOrders: orders.length,
+  totalRevenue: orders.reduce(
+    (sum, order) => sum + Number(order.total || 0),
+    0,
+  ),
+});
 
 const getStats = async () => {
-  const last30Days = new Date();
-  last30Days.setDate(last30Days.getDate() - 30);
+  const now = new Date();
 
-  const last15Days = new Date();
-  last15Days.setDate(last15Days.getDate() - 15);
+  const daysAgo = (days: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    return d;
+  };
 
-  const last7Days = new Date();
-  last7Days.setDate(last7Days.getDate() - 7);
-  const orders7 = await prisma.order.findMany({
-    where: {
-      orderDate: {
-        gte: last7Days,
-        lte: new Date(),
+  const fetchOrders = (from: Date) =>
+    prisma.order.findMany({
+      where: {
+        status: $Enums.OrderStatus.COMPLETED, // ✅ accuracy
+        orderDate: {
+          gte: from,
+          lte: now,
+        },
       },
-    },
-  });
-  const orders30 = await prisma.order.findMany({
-    where: {
-      orderDate: {
-        gte: last30Days,
-        lte: new Date(),
-      },
-    },
-  });
-  const orders15 = await prisma.order.findMany({
-    where: {
-      orderDate: {
-        gte: last15Days,
-        lte: new Date(),
-      },
-    },
-  });
+      select: {},
+    });
+
+  const [orders7, orders15, orders30] = await Promise.all([
+    fetchOrders(daysAgo(7)),
+    fetchOrders(daysAgo(15)),
+    fetchOrders(daysAgo(30)),
+  ]);
 
   return {
     last7Days: calculateStats(orders7),
@@ -50,8 +44,13 @@ const getStats = async () => {
 };
 
 const getBestProduct = async () => {
-  const bestProducts = await prisma.orderItem.groupBy({
+  const bestVariants = await prisma.orderItem.groupBy({
     by: ["productVariantId"],
+    where: {
+      order: {
+        status: $Enums.OrderStatus.COMPLETED,
+      },
+    },
     _sum: {
       quantity: true,
     },
@@ -63,68 +62,64 @@ const getBestProduct = async () => {
     take: 5,
   });
 
-  const productDetails = await Promise.all(
-    bestProducts.map(async (item) => {
-      const variant = await prisma.productVariant.findUnique({
-        where: { id: item.productVariantId },
-        include: { product: true },
-      });
-      return {
-        productVariantId: item.productVariantId,
-        totalSold: item._sum.quantity,
-        productName: variant?.product.name,
-      };
-    })
-  );
+  const variants = await prisma.productVariant.findMany({
+    where: {
+      id: {
+        in: bestVariants.map((v) => v.productVariantId),
+      },
+    },
+    include: {
+      product: {
+        select: { id: true, name: true },
+      },
+    },
+  });
 
-  return productDetails;
+  return bestVariants.map((item) => {
+    const variant = variants.find((v) => v.id === item.productVariantId);
+
+    return {
+      productVariantId: item.productVariantId,
+      productId: variant?.product.id,
+      productName: variant?.product.name,
+      totalSold: item._sum.quantity ?? 0,
+    };
+  });
 };
 
 const cancelledProducts = async () => {
-  const cancelledOrders = await prisma.order.findMany({
-    where: { status: $Enums.OrderStatus.CANCELLED },
-    include: { items: true },
+  const cancelled = await prisma.orderItem.groupBy({
+    by: ["productVariantId"],
+    where: {
+      order: {
+        status: $Enums.OrderStatus.CANCELLED,
+      },
+    },
+    _sum: {
+      quantity: true,
+    },
+    orderBy: {
+      _sum: {
+        quantity: "desc",
+      },
+    },
+    take: 5,
   });
 
-  const productCancellationCount: { [key: string]: number } = {};
-
-  cancelledOrders.forEach((order) => {
-    order.items.forEach((item) => {
-      if (!productCancellationCount[item.productVariantId]) {
-        productCancellationCount[item.productVariantId] = 0;
-      }
-      productCancellationCount[item.productVariantId] += item.quantity;
-    });
-  });
-
-  const sortedCancellations = Object.entries(productCancellationCount)
-    .sort((a, b) => b[1] - a[1])
-    .map(([productVariantId, totalCancelled]) => ({
-      productVariantId,
-      totalCancelled,
-    }))
-    .slice(0, 5);
-
-  return sortedCancellations;
+  return cancelled.map((item) => ({
+    productVariantId: item.productVariantId,
+    totalCancelled: item._sum.quantity ?? 0,
+  }));
 };
 
 const getUserStats = async () => {
-  const totalUsers = await prisma.user.count();
-  const adminUsers = await prisma.user.count({
-    where: {
-      role: $Enums.UserRole.ADMIN,
-    },
-  });
-  const superAdminUsers = await prisma.user.count({
-    where: {
-      role: $Enums.UserRole.SUPER_ADMIN,
-    },
-  });
-  const customerUsers = await prisma.user.count({
-    where: {
-      role: $Enums.UserRole.USER,
-    },
-  });
+  const [totalUsers, adminUsers, superAdminUsers, customerUsers] =
+    await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { role: $Enums.UserRole.ADMIN } }),
+      prisma.user.count({ where: { role: $Enums.UserRole.SUPER_ADMIN } }),
+      prisma.user.count({ where: { role: $Enums.UserRole.USER } }),
+    ]);
 
   return {
     totalUsers,
@@ -135,13 +130,20 @@ const getUserStats = async () => {
 };
 
 const getCategoryStats = async () => {
-  const categoryStats = await prisma.category.findMany({
+  const categories = await prisma.category.findMany({
     include: {
       products: {
         include: {
           variants: {
             include: {
-              orderItems: true,
+              orderItems: {
+                where: {
+                  order: {
+                    status: $Enums.OrderStatus.COMPLETED,
+                  },
+                },
+                select: { quantity: true },
+              },
             },
           },
         },
@@ -149,23 +151,25 @@ const getCategoryStats = async () => {
     },
   });
 
-  const stats = categoryStats.map((category) => {
-    let totalSold = 0;
-    category.products.forEach((product) => {
-      product.variants.forEach((variant) => {
-        variant.orderItems.forEach((item) => {
-          totalSold += item.quantity;
-        });
-      });
-    });
+  return categories.map((category) => {
+    const totalSold = category.products.reduce((sum, product) => {
+      return (
+        sum +
+        product.variants.reduce((vSum, variant) => {
+          return (
+            vSum +
+            variant.orderItems.reduce((iSum, item) => iSum + item.quantity, 0)
+          );
+        }, 0)
+      );
+    }, 0);
+
     return {
       categoryId: category.id,
       categoryName: category.name,
       totalSold,
     };
   });
-
-  return stats;
 };
 
 const perCategoryStats = async () => {

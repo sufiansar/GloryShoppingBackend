@@ -1,41 +1,23 @@
-export const productFilters = {
-  isActive: (value: string) => ({
-    isActive: value === "true",
-  }),
+export const productFilterableFields = [
+  "createdAt",
+  "updatedAt",
+  "stock",
+  "isNew",
+  "isFeatured",
+  "isTrending",
+  "isBestSeller",
+  "isActive",
+  "isTrending",
+  "isBestSeller",
+  "isActive",
+  "price",
+  "searchTerm",
+];
 
-  isNew: (value: string) => ({
-    isNew: value === "true",
-  }),
-
-  isFeatured: (value: string) => ({
-    isFeatured: value === "true",
-  }),
-
-  isTrending: (value: string) => ({
-    isTrending: value === "true",
-  }),
-
-  isBestSeller: (value: string) => ({
-    isBestSeller: value === "true",
-  }),
-
-  brandId: (value: string) => ({
-    brandId: value,
-  }),
-
-  categoryId: (value: string) => ({
-    categoryId: value,
-  }),
-
-  minPrice: (value: string) => ({
-    price: {
-      gte: Number(value),
-    },
-  }),
-
-  maxPrice: (value: string) => ({
-    price: {
-      lte: Number(value),
-    },
-  }),
-};
+export const productSearchAbleFields = [
+  "name",
+  "description",
+  "shortDesc",
+  "longDesc",
+  "slug",
+];

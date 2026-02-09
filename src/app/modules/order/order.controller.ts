@@ -4,6 +4,8 @@ import { sendResponse } from "../../utility/sendResponse";
 import httpStatus from "http-status";
 import { OrderService } from "./order.service";
 import AppError from "../../errorHelpers/AppError";
+import pick from "../../utility/pick";
+import { OrderFilterableFields } from "./order.constant";
 
 const createOrder = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.id;
@@ -74,9 +76,10 @@ const updateOrderStatus = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getALlOrders = catchAsync(async (req: Request, res: Response) => {
-  const query = req.query as Record<string, string>;
+  const filters = pick(req.query, OrderFilterableFields);
+  const options = pick(req.query, ["limit", "page", "sortBy", "sortOrder"]);
   const userId = req.user?.id;
-  const result = await OrderService.getALlOrders(query, userId);
+  const result = await OrderService.getALlOrders(filters, options, userId);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

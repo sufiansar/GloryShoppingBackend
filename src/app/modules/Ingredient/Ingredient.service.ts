@@ -1,5 +1,8 @@
+import { Prisma } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
+import { paginationHelper } from "../../utility/paginationField";
 import { PrismaQueryBuilder } from "../../utility/queryBuilder";
+import { IngredientSearchAbleFields } from "./ingrediant.constant";
 import { IIngredient } from "./Ingredient.interface";
 
 const createIngredient = async (data: IIngredient) => {
@@ -19,25 +22,64 @@ const createIngredient = async (data: IIngredient) => {
   return ingredient;
 };
 
-const getAllIngredients = async (query: Record<string, string>) => {
-  const prismaQueryBuilder = new PrismaQueryBuilder(query)
-    .filter()
-    .search(["name", "description"])
-    .sort()
-    .paginate();
+const getAllIngredients = async (
+  filters: Record<string, any>,
+  options: Record<string, any>,
+) => {
+  const { page, limit, skip, sortBy, sortOrder } =
+    paginationHelper.calculatePagination(options);
 
-  const prismaQuery = prismaQueryBuilder.build();
+  const { searchTerm, ...filterValues } = filters;
 
-  const [ingredients, meta] = await Promise.all([
-    prisma.ingredient.findMany({
-      ...prismaQuery,
-    }),
-    prismaQueryBuilder.getMeta(prisma.ingredient),
-  ]);
+  const andConditions: Prisma.IngredientWhereInput[] = [];
+  if (searchTerm) {
+    andConditions.push({
+      OR: IngredientSearchAbleFields.map((field) => ({
+        [field]: {
+          contains: searchTerm,
+          mode: "insensitive",
+        },
+      })),
+    });
+  }
+
+  if (Object.keys(filterValues).length > 0) {
+    andConditions.push({
+      AND: Object.keys(filterValues).map((key) => ({
+        [key]: {
+          equals: filterValues[key],
+        },
+      })),
+    });
+  }
+
+  const whereConditions: Prisma.IngredientWhereInput =
+    andConditions.length > 0
+      ? {
+          AND: andConditions,
+        }
+      : {};
+
+  const ingredients = await prisma.ingredient.findMany({
+    where: whereConditions,
+    skip,
+    take: limit,
+    orderBy: sortBy
+      ? { [sortBy]: sortOrder?.toLowerCase() === "asc" ? "asc" : "desc" }
+      : { createdAt: "desc" },
+  });
+
+  const total = await prisma.ingredient.count({
+    where: whereConditions,
+  });
 
   return {
     data: ingredients,
-    meta,
+    meta: {
+      page,
+      limit,
+      total,
+    },
   };
 };
 
@@ -49,7 +91,7 @@ const getIngredientById = async (id: string) => {
 };
 const updateIngredient = async (
   id: string,
-  ingredientData: Partial<IIngredient>
+  ingredientData: Partial<IIngredient>,
 ) => {
   const existingIngredient = await prisma.ingredient.findUnique({
     where: { id },
@@ -87,7 +129,7 @@ const deleteIngredient = async (id: string) => {
 
 const joinIngredientsToProduct = async (
   ingredientIds: string[] | string,
-  productId: string
+  productId: string,
 ) => {
   const ids = Array.isArray(ingredientIds) ? ingredientIds : [ingredientIds];
 
@@ -114,8 +156,8 @@ const joinIngredientsToProduct = async (
         where: { productId_ingredientId: { productId, ingredientId } },
         create: { productId, ingredientId },
         update: {},
-      })
-    )
+      }),
+    ),
   );
 };
 

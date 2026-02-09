@@ -32,7 +32,7 @@ model Product {
   skinTypes   ProductSkinType[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  @@index([name, slug])
+  @@index([name, slug, brandId, categoryId, isActive, isFeatured, isTrending, isBestSeller])
 }
 
 model ProductVariant {

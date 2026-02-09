@@ -2,6 +2,7 @@ import { send } from "process";
 import {
   DeliveryStatus,
   OrderStatus,
+  Prisma,
   UserRole,
 } from "../../../generated/prisma";
 import { prisma } from "../../config/prisma";
@@ -9,6 +10,8 @@ import { PrismaQueryBuilder } from "../../utility/queryBuilder";
 import { sendEmail } from "../../utility/sendEmail";
 import { CheckoutInput, DeliveryInput } from "./order.interface";
 import { v4 as uuidv4 } from "uuid";
+import { paginationHelper } from "../../utility/paginationField";
+import { OrderSearchAbleFields } from "./order.constant";
 
 export const createOrder = async (
   userId: string | undefined,
@@ -295,7 +298,16 @@ const getOrderBYId = async (
   return order;
 };
 
-const getALlOrders = async (query: Record<string, string>, userId?: string) => {
+const getALlOrders = async (
+  filters: Record<string, any>,
+  options: Record<string, any>,
+  userId?: string,
+) => {
+  const { page, limit, skip, sortBy, sortOrder } =
+    paginationHelper.calculatePagination(options);
+
+  const { searchTerm, ...filterValues } = filters;
+
   const isUserExists = await prisma.user.findUnique({
     where: { id: userId || "" },
   });
@@ -311,24 +323,58 @@ const getALlOrders = async (query: Record<string, string>, userId?: string) => {
     throw new Error("Unauthorized access");
   }
 
-  const queryBuilder = new PrismaQueryBuilder(query).filter().sort().paginate();
+  const andConditions: Prisma.OrderWhereInput[] = [];
+  if (searchTerm) {
+    andConditions.push({
+      OR: OrderSearchAbleFields.map((field) => ({
+        [field]: {
+          contains: searchTerm,
+          mode: "insensitive",
+        },
+      })),
+    });
+  }
 
-  const prismaQuery = queryBuilder.build();
+  if (Object.keys(filterValues).length > 0) {
+    andConditions.push({
+      AND: Object.keys(filterValues).map((key) => ({
+        [key]: {
+          equals: filterValues[key],
+        },
+      })),
+    });
+  }
 
-  const [orders, meta] = await Promise.all([
-    prisma.order.findMany({
-      ...prismaQuery,
-      include: {
-        items: true,
-        delivery: true,
-      },
-    }),
-    queryBuilder.getMeta(prisma.order),
-  ]);
+  const whereConditions: Prisma.OrderWhereInput =
+    andConditions.length > 0
+      ? {
+          AND: andConditions,
+        }
+      : {};
+  const orders = await prisma.order.findMany({
+    where: whereConditions,
+    orderBy: {
+      [sortBy]: sortOrder,
+    },
+    skip,
+    take: limit,
+    include: {
+      items: true,
+      delivery: true,
+    },
+  });
+
+  const total = await prisma.order.count({
+    where: whereConditions,
+  });
 
   return {
+    meta: {
+      page,
+      limit,
+      total,
+    },
     data: orders,
-    meta,
   };
 };
 

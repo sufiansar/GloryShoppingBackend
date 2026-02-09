@@ -16,7 +16,10 @@ const getAllSkinConcerns = async (query: Record<string, string>) => {
 
   const prismaQuery = prismaQueryBuilder.build();
   const [skinConcerns, meta] = await Promise.all([
-    prisma.skinConcern.findMany(prismaQuery),
+    prisma.skinConcern.findMany({
+      ...prismaQuery,
+      orderBy: { createdAt: "desc" },
+    }),
     prismaQueryBuilder.getMeta(prisma.skinConcern),
   ]);
 
@@ -35,7 +38,7 @@ const getSkinConcernById = async (id: string) => {
 
 const updateSkinConcern = async (
   id: string,
-  skinConcernData: { name?: string }
+  skinConcernData: { name?: string },
 ) => {
   const existingSkinConcern = await prisma.skinConcern.findUnique({
     where: { id },
@@ -84,7 +87,10 @@ const getAllSkinTypes = async (query: Record<string, string>) => {
 
   const prismaQuery = prismaQueryBuilder.build();
   const [skinTypes, meta] = await Promise.all([
-    prisma.skinType.findMany(prismaQuery),
+    prisma.skinType.findMany({
+      ...prismaQuery,
+      orderBy: { createdAt: "desc" },
+    }),
     prismaQueryBuilder.getMeta(prisma.skinType),
   ]);
 
@@ -136,7 +142,7 @@ const deleteSkinType = async (id: string) => {
 const addProductSkin = async (
   productId: string,
   skinConcernIds: string[],
-  skinTypeIds: string[]
+  skinTypeIds: string[],
 ) => {
   if (!productId || !skinConcernIds?.length || !skinTypeIds?.length) {
     throw new Error("productId, skinConcernIds, and skinTypeIds are required");

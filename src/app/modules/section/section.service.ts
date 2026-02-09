@@ -7,8 +7,8 @@ const createSection = async (section: ISection) => {
     section.isVisible === "true"
       ? true
       : section.isVisible === "false"
-      ? false
-      : undefined;
+        ? false
+        : undefined;
   const data = {
     title: section.title || undefined,
     description: section.description || undefined,
@@ -38,7 +38,10 @@ const getAllSections = async (query: Record<string, string>) => {
   const prismaQuery = prismaQueryBuilder.build();
 
   const [sections, meta] = await Promise.all([
-    prisma.section.findMany(prismaQuery),
+    prisma.section.findMany({
+      ...prismaQuery,
+      orderBy: { createdAt: "desc" },
+    }),
     prismaQueryBuilder.getMeta(prisma.section),
   ]);
 
@@ -88,7 +91,7 @@ const updateSection = async (id: string, sectionData: Partial<ISection>) => {
 
   if (sectionData.images && existingSection.images) {
     const imagesToDelete = existingSection.images.filter(
-      (img) => !sectionData.images?.includes(img)
+      (img) => !sectionData.images?.includes(img),
     );
     for (const imageUrl of imagesToDelete) {
       await deleteImageFromCLoudinary(imageUrl);

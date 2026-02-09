@@ -3,6 +3,9 @@ import { prisma } from "../../config/prisma";
 import { PrismaQueryBuilder } from "../../utility/queryBuilder";
 import { generateSlug } from "../../utility/slugGenerate";
 import { ICreateCategory } from "./category.interface";
+import { paginationHelper } from "../../utility/paginationField";
+import { Prisma } from "../../../generated/prisma";
+import { CategorySearchAbleFields } from "./category.filterableField";
 
 const createCategory = async (categoryData: ICreateCategory) => {
   if (!categoryData.images) {
@@ -25,56 +28,141 @@ const createCategory = async (categoryData: ICreateCategory) => {
   return result;
 };
 
-const getAllCategories = async (query: Record<string, string>) => {
-  const prismaQueryBuilder = new PrismaQueryBuilder(query)
-    .filter()
-    .search(["name", "description"])
-    .sort()
-    .paginate();
+const getAllCategories = async (
+  filters: Record<string, any>,
+  options: Record<string, any>,
+) => {
+  const { page, limit, skip, sortBy, sortOrder } =
+    paginationHelper.calculatePagination(options);
 
-  const prismaQuery = prismaQueryBuilder.build();
+  const { searchTerm, ...filterValues } = filters;
+  const andConditions: Prisma.CategoryWhereInput[] = [];
+  if (searchTerm) {
+    andConditions.push({
+      OR: CategorySearchAbleFields.map((field) => ({
+        [field]: {
+          contains: searchTerm,
+          mode: "insensitive",
+        },
+      })),
+    });
+  }
 
-  const [categories, meta] = await Promise.all([
-    prisma.category.findMany({
-      ...prismaQuery,
-      include: {
-        products: true,
-      },
-    }),
-    prismaQueryBuilder.getMeta(prisma.category),
-  ]);
+  if (Object.keys(filterValues).length > 0) {
+    andConditions.push({
+      AND: Object.keys(filterValues).map((key) => ({
+        [key]: {
+          equals: filterValues[key],
+        },
+      })),
+    });
+  }
+
+  const whereConditions: Prisma.CategoryWhereInput =
+    andConditions.length > 0
+      ? {
+          AND: andConditions,
+        }
+      : {};
+
+  const categories = await prisma.category.findMany({
+    where: whereConditions,
+    skip,
+    take: limit,
+    orderBy: sortBy
+      ? { [sortBy]: sortOrder?.toLowerCase() === "asc" ? "asc" : "desc" }
+      : { createdAt: "desc" },
+  });
+
+  const total = await prisma.category.count({
+    where: whereConditions,
+  });
 
   return {
     data: categories,
-    meta,
+    meta: {
+      page,
+      limit,
+      total,
+    },
   };
 };
 
-const getProductByCetegory = async (categoryId: string) => {
-  const prismaQueryBuilder = new PrismaQueryBuilder({})
-    .search(["name", "description"])
-    .filter()
-    .sort()
-    .paginate();
+const getProductByCetegory = async (
+  filters: Record<string, any>,
+  options: Record<string, any>,
+  categoryId: string,
+) => {
+  const { page, limit, skip, sortBy, sortOrder } =
+    paginationHelper.calculatePagination(options);
 
-  const prismaQuery = prismaQueryBuilder.build();
+  const { searchTerm, ...filterValues } = filters;
+  const andConditions: Prisma.ProductWhereInput[] = [];
+  if (searchTerm) {
+    andConditions.push({
+      OR: CategorySearchAbleFields.map((field) => ({
+        [field]: {
+          contains: searchTerm,
+          mode: "insensitive",
+        },
+      })),
+    });
+  }
+
+  if (Object.keys(filterValues).length > 0) {
+    andConditions.push({
+      AND: Object.keys(filterValues).map((key) => ({
+        [key]: {
+          equals: filterValues[key],
+        },
+      })),
+    });
+  }
+
+  const whereConditions: Prisma.ProductWhereInput =
+    andConditions.length > 0
+      ? {
+          AND: andConditions,
+        }
+      : {};
 
   const products = await prisma.product.findMany({
     where: {
       categoryId,
+      ...whereConditions,
     },
-    ...prismaQuery,
+    skip,
+    take: limit,
+    orderBy: sortBy
+      ? { [sortBy]: sortOrder?.toLowerCase() === "asc" ? "asc" : "desc" }
+      : { createdAt: "desc" },
     include: {
       brand: true,
       category: true,
     },
   });
-  return products;
+
+  const total = await prisma.product.count({
+    where: {
+      categoryId,
+      ...whereConditions,
+    },
+  });
+
+  return {
+    data: products,
+    meta: {
+      page,
+      limit,
+      total,
+    },
+  };
 };
 
 const getCategoryBySlug = async (slug: string) => {
   const category = await prisma.category.findUnique({
     where: { slug },
+
     include: {
       products: true,
     },
@@ -82,14 +170,43 @@ const getCategoryBySlug = async (slug: string) => {
   return category;
 };
 
-const getAllProductByCategoryBySlug = async (slug: string) => {
-  const prismaQueryBuilder = new PrismaQueryBuilder({})
-    .search(["name", "description"])
-    .filter()
-    .sort()
-    .paginate();
+const getAllProductByCategoryBySlug = async (
+  filters: Record<string, any>,
+  options: Record<string, any>,
+  slug: string,
+) => {
+  const { page, limit, skip, sortBy, sortOrder } =
+    paginationHelper.calculatePagination(options);
 
-  const prismaQuery = prismaQueryBuilder.build();
+  const { searchTerm, ...filterValues } = filters;
+  const andConditions: Prisma.ProductWhereInput[] = [];
+  if (searchTerm) {
+    andConditions.push({
+      OR: CategorySearchAbleFields.map((field) => ({
+        [field]: {
+          contains: searchTerm,
+          mode: "insensitive",
+        },
+      })),
+    });
+  }
+
+  if (Object.keys(filterValues).length > 0) {
+    andConditions.push({
+      AND: Object.keys(filterValues).map((key) => ({
+        [key]: {
+          equals: filterValues[key],
+        },
+      })),
+    });
+  }
+
+  const whereConditions: Prisma.ProductWhereInput =
+    andConditions.length > 0
+      ? {
+          AND: andConditions,
+        }
+      : {};
 
   const category = await prisma.category.findUnique({
     where: { slug },
@@ -102,14 +219,34 @@ const getAllProductByCategoryBySlug = async (slug: string) => {
   const products = await prisma.product.findMany({
     where: {
       categoryId: category.id,
+      ...whereConditions,
     },
-    ...prismaQuery,
+    skip,
+    take: limit,
+    orderBy: sortBy
+      ? { [sortBy]: sortOrder?.toLowerCase() === "asc" ? "asc" : "desc" }
+      : { createdAt: "desc" },
     include: {
       brand: true,
       category: true,
     },
   });
-  return products;
+
+  const total = await prisma.product.count({
+    where: {
+      categoryId: category.id,
+      ...whereConditions,
+    },
+  });
+
+  return {
+    data: products,
+    meta: {
+      page,
+      limit,
+      total,
+    },
+  };
 };
 const getSingleCategory = async (id: string) => {
   const category = await prisma.category.findUnique({

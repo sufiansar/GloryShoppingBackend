@@ -1,9 +1,11 @@
+import { Prisma } from "../../../generated/prisma";
 import { deleteImageFromCLoudinary } from "../../config/cloudinary";
 import { prisma } from "../../config/prisma";
 import AppError from "../../errorHelpers/AppError";
+import { paginationHelper } from "../../utility/paginationField";
 import { PrismaQueryBuilder } from "../../utility/queryBuilder";
 import { generateSlug } from "../../utility/slugGenerate";
-import { productFilters } from "./product.filterableField";
+import { productSearchAbleFields } from "./product.filterableField";
 import { IProduct } from "./product.interface";
 
 const createProduct = async (payload: IProduct) => {
@@ -42,149 +44,428 @@ const createProduct = async (payload: IProduct) => {
   });
 };
 
-const getAllProducts = async (query: Record<string, string>) => {
-  const prismaQueryBuilder = new PrismaQueryBuilder(query)
-    .filter(productFilters)
-    .search(["name", "description"])
-    .sort()
-    .paginate();
+// const getAllProducts = async (query: Record<string, string>) => {
+//   const prismaQueryBuilder = new PrismaQueryBuilder(query)
+//     .filter(productFilters)
+//     .search(["name", "description"])
+//     .sort()
+//     .paginate();
 
-  const prismaQuery = prismaQueryBuilder.build();
+//   const prismaQuery = prismaQueryBuilder.build();
 
-  const [products, meta] = await Promise.all([
-    prisma.product.findMany({
-      ...prismaQuery,
-      include: {
-        brand: true,
-        category: true,
-        reviews: true,
-        variants: {
-          include: {
-            attributes: true,
-            cartItems: true,
-            orderItems: true,
+//   const [products, meta] = await Promise.all([
+//     prisma.product.findMany({
+//       ...prismaQuery,
+//       include: {
+//         brand: true,
+//         category: true,
+//         reviews: true,
+//         variants: {
+//           include: {
+//             attributes: true,
+//             cartItems: true,
+//             orderItems: true,
+//           },
+//         },
+//         ingredients: {
+//           include: {
+//             ingredient: {
+//               select: {
+//                 name: true,
+//                 description: true,
+//                 benefits: true,
+//                 sideEffects: true,
+//                 usage: true,
+//                 precautions: true,
+//                 safetyLevel: true,
+//                 isActive: true,
+//               },
+//             },
+//           },
+//         },
+//         skinTypes: {
+//           include: {
+//             skinType: {
+//               select: { name: true },
+//             },
+//           },
+//         },
+//         concerns: {
+//           include: {
+//             skinConcern: {
+//               select: { name: true },
+//             },
+//           },
+//         },
+//       },
+//       orderBy: { createdAt: "desc" },
+//     }),
+//     prismaQueryBuilder.getMeta(prisma.product),
+//   ]);
+
+//   return {
+//     data: products,
+//     meta,
+//   };
+// };
+// const getAllProducts = async (query: Record<string, string>) => {
+//   const searchTerm = query.searchTerm?.trim();
+//   const page = Number(query.page) || 1;
+//   const limit = Number(query.limit) || 10;
+//   const skip = (page - 1) * limit;
+
+//   // Base filters
+//   const baseWhere: any = {};
+//   for (const key in query) {
+//     if ((productFilters as Record<string, (value: string) => any>)[key]) {
+//       baseWhere[key] = (
+//         productFilters as Record<string, (value: string) => any>
+//       )[key](query[key]);
+//     }
+//   }
+
+//   // Build OR only for non-nullable fields
+//   const searchFields = ["name", "slug"]; // always non-null
+//   const optionalFields = ["description", "shortDesc", "longDesc"];
+
+//   const orConditions: any[] = [];
+
+//   searchFields.forEach((f) => {
+//     if (searchTerm)
+//       orConditions.push({ [f]: { contains: searchTerm, mode: "insensitive" } });
+//   });
+
+//   optionalFields.forEach((f) => {
+//     if (searchTerm)
+//       orConditions.push({ [f]: { contains: searchTerm, mode: "insensitive" } });
+//   });
+
+//   const where = orConditions.length
+//     ? { AND: [baseWhere, { OR: orConditions }] }
+//     : baseWhere;
+
+//   const [products, total] = await Promise.all([
+//     prisma.product.findMany({
+//       where,
+//       skip,
+//       take: limit,
+//       orderBy: { createdAt: "desc" },
+//       include: {
+//         brand: true,
+//         category: true,
+//         reviews: true,
+//         variants: {
+//           include: { attributes: true, cartItems: true, orderItems: true },
+//         },
+//         ingredients: { include: { ingredient: { select: { name: true } } } },
+//         skinTypes: { include: { skinType: { select: { name: true } } } },
+//         concerns: { include: { skinConcern: { select: { name: true } } } },
+//       },
+//     }),
+//     prisma.product.count({ where }),
+//   ]);
+
+//   return {
+//     data: products,
+//     meta: {
+//       page,
+//       limit,
+//       total,
+//       totalPage: Math.ceil(total / limit),
+//     },
+//   };
+// };
+
+const getAllProducts = async (
+  filters: Record<string, any>,
+  options: Record<string, any>,
+) => {
+  const { page, limit, skip, sortBy, sortOrder } =
+    paginationHelper.calculatePagination(options);
+
+  const { searchTerm, ...filterValues } = filters;
+
+  const andConditions: Prisma.ProductWhereInput[] = [];
+  if (searchTerm) {
+    const searchWords = searchTerm.trim().split(/\s+/);
+
+    andConditions.push({
+      AND: searchWords.map((word: any) => ({
+        OR: productSearchAbleFields.map((field) => ({
+          [field]: {
+            contains: word,
+            mode: "insensitive",
           },
+        })),
+      })),
+    });
+  }
+
+  if (Object.keys(filterValues).length > 0) {
+    andConditions.push({
+      AND: Object.keys(filterValues).map((key) => ({
+        [key]: {
+          equals: filterValues[key],
         },
-        ingredients: {
-          include: {
-            ingredient: {
-              select: {
-                name: true,
-                description: true,
-                benefits: true,
-                sideEffects: true,
-                usage: true,
-                precautions: true,
-                safetyLevel: true,
-                isActive: true,
-              },
-            },
-          },
+      })),
+    });
+  }
+
+  const whereConditions: Prisma.ProductWhereInput =
+    andConditions.length > 0
+      ? {
+          AND: andConditions,
+        }
+      : {};
+
+  const result = await prisma.product.findMany({
+    skip,
+    take: limit,
+    where: {
+      AND: whereConditions,
+    },
+    include: {
+      brand: true,
+      category: true,
+      reviews: true,
+      variants: {
+        include: {
+          attributes: true,
+          cartItems: true,
+          orderItems: true,
         },
-        skinTypes: {
-          include: {
-            skinType: {
-              select: { name: true },
-            },
-          },
-        },
-        concerns: {
-          include: {
-            skinConcern: {
-              select: { name: true },
+      },
+      ingredients: {
+        include: {
+          ingredient: {
+            select: {
+              name: true,
+              description: true,
+              benefits: true,
+              sideEffects: true,
+              usage: true,
+              precautions: true,
+              safetyLevel: true,
+              isActive: true,
             },
           },
         },
       },
-    }),
-    prismaQueryBuilder.getMeta(prisma.product),
-  ]);
+      skinTypes: {
+        include: {
+          skinType: {
+            select: { name: true },
+          },
+        },
+      },
+      concerns: {
+        include: {
+          skinConcern: {
+            select: { name: true },
+          },
+        },
+      },
+    },
+    orderBy: {
+      [sortBy]: sortOrder,
+    },
+  });
 
+  const total = await prisma.product.count({
+    where: whereConditions,
+  });
   return {
-    data: products,
-    meta,
+    meta: {
+      page,
+      limit,
+      total,
+    },
+    data: result,
   };
 };
-
 const getProductByCetegory = async (
-  query: Record<string, string>,
+  filters: Record<string, any>,
+  options: Record<string, any>,
+
   categoryId: string,
 ) => {
-  const prismaQueryBuilder = new PrismaQueryBuilder(query)
-    .search(["name", "description", "shortDesc", "longDesc", "slug"])
-    .filter()
-    .sort()
-    .paginate();
+  const { page, limit, skip, sortBy, sortOrder } =
+    paginationHelper.calculatePagination(options);
 
-  const prismaQuery = prismaQueryBuilder.build();
+  const { searchTerm, ...filterValues } = filters;
 
-  const [products, meta] = await Promise.all([
-    prisma.product.findMany({
-      where: { categoryId },
-      ...prismaQuery,
-      include: {
-        brand: true,
-        category: true,
-        reviews: true,
-        variants: {
-          include: {
-            attributes: true,
-            cartItems: true,
-            orderItems: true,
+  const andConditions: Prisma.ProductWhereInput[] = [];
+  if (searchTerm) {
+    const searchWords = searchTerm.trim().split(/\s+/);
+
+    andConditions.push({
+      AND: searchWords.map((word: any) => ({
+        OR: productSearchAbleFields.map((field) => ({
+          [field]: {
+            contains: word,
+            mode: "insensitive",
           },
+        })),
+      })),
+    });
+  }
+
+  if (Object.keys(filterValues).length > 0) {
+    andConditions.push({
+      AND: Object.keys(filterValues).map((key) => ({
+        [key]: {
+          equals: filterValues[key],
         },
-        ingredients: {
-          include: {
-            ingredient: {
-              select: {
-                name: true,
-                description: true,
-                benefits: true,
-                sideEffects: true,
-                usage: true,
-                precautions: true,
-                safetyLevel: true,
-                isActive: true,
-              },
-            },
-          },
+      })),
+    });
+  }
+
+  andConditions.push({ categoryId });
+
+  const whereConditions: Prisma.ProductWhereInput =
+    andConditions.length > 0
+      ? {
+          AND: andConditions,
+        }
+      : {};
+
+  const result = await prisma.product.findMany({
+    skip,
+    take: limit,
+    where: {
+      AND: whereConditions,
+    },
+    include: {
+      brand: true,
+      category: true,
+      reviews: true,
+      variants: {
+        include: {
+          attributes: true,
+          cartItems: true,
+          orderItems: true,
         },
-        skinTypes: {
-          include: {
-            skinType: {
-              select: { name: true },
-            },
-          },
-        },
-        concerns: {
-          include: {
-            skinConcern: {
-              select: { name: true },
+      },
+      ingredients: {
+        include: {
+          ingredient: {
+            select: {
+              name: true,
+              description: true,
+              benefits: true,
+              sideEffects: true,
+              usage: true,
+              precautions: true,
+              safetyLevel: true,
+              isActive: true,
             },
           },
         },
       },
-    }),
-    prismaQueryBuilder.getMeta(prisma.product),
-  ]);
+      skinTypes: {
+        include: {
+          skinType: {
+            select: { name: true },
+          },
+        },
+      },
+      concerns: {
+        include: {
+          skinConcern: {
+            select: { name: true },
+          },
+        },
+      },
+    },
+    orderBy: {
+      [sortBy]: sortOrder,
+    },
+  });
 
+  const total = await prisma.product.count({
+    where: whereConditions,
+  });
   return {
-    data: products,
-    meta,
+    meta: {
+      page,
+      limit,
+      total,
+    },
+    data: result,
   };
 };
+
+// const getProductBySlug = async (
+//   query: Record<string, string>,
+//   slug: string,
+// ) => {
+//   const prismaQueryBuilder = new PrismaQueryBuilder(query)
+//     .search(["name", "description", " shortDesc", "longDesc", "slug"])
+//     .filter()
+//     .sort()
+//     .paginate();
+
+//   const prismaQuery = prismaQueryBuilder.build();
+
+//   const product = await prisma.product.findFirst({
+//     where: { slug },
+//     ...prismaQuery,
+//     include: {
+//       brand: true,
+//       category: true,
+//       reviews: true,
+//       variants: {
+//         include: {
+//           attributes: true,
+//           cartItems: true,
+//           orderItems: true,
+//         },
+//       },
+//       ingredients: {
+//         include: {
+//           ingredient: {
+//             select: {
+//               name: true,
+//               description: true,
+//               benefits: true,
+//               sideEffects: true,
+//               usage: true,
+//               precautions: true,
+//               safetyLevel: true,
+//               isActive: true,
+//             },
+//           },
+//         },
+//       },
+//       skinTypes: {
+//         include: {
+//           skinType: {
+//             select: { name: true },
+//           },
+//         },
+//       },
+//       concerns: {
+//         include: {
+//           skinConcern: {
+//             select: { name: true },
+//           },
+//         },
+//       },
+//     },
+//   });
+//   return product;
+// };
 
 const getProductBySlug = async (
   query: Record<string, string>,
   slug: string,
 ) => {
-  const prismaQueryBuilder = new PrismaQueryBuilder(query)
-    .search(["name", "description", " shortDesc", "longDesc", "slug"])
-    .filter()
-    .sort()
-    .paginate();
+  const prismaQueryBuilder = new PrismaQueryBuilder(query).filter();
 
   const prismaQuery = prismaQueryBuilder.build();
+
+  delete prismaQuery.take;
+  delete prismaQuery.skip;
 
   const product = await prisma.product.findFirst({
     where: { slug },
@@ -231,9 +512,12 @@ const getProductBySlug = async (
         },
       },
     },
+    orderBy: { createdAt: "desc" },
   });
+
   return product;
 };
+
 const getProductById = async (id: string) => {
   const product = await prisma.product.findUnique({
     where: { id },
@@ -283,21 +567,49 @@ const getProductById = async (id: string) => {
   return product;
 };
 
-const getProductByBrand = async (
-  query: Record<string, string>,
-  brandId: string,
+const getBestSellingProducts = async (
+  filters: Record<string, any>,
+  options: Record<string, any>,
 ) => {
-  const prismaQueryBuilder = new PrismaQueryBuilder(query)
-    .search(["name", "description", " shortDesc", "longDesc", "slug"])
-    .filter()
-    .sort()
-    .paginate();
+  const { page, limit, skip } = paginationHelper.calculatePagination(options);
 
-  const prismaQuery = prismaQueryBuilder.build();
+  const { searchTerm, ...filterValues } = filters;
 
+  const andConditions: Prisma.ProductWhereInput[] = [];
+
+  // 🔍 search
+  if (searchTerm) {
+    const searchWords = searchTerm.trim().split(/\s+/);
+
+    andConditions.push({
+      AND: searchWords.map((word: any) => ({
+        OR: productSearchAbleFields.map((field) => ({
+          [field]: {
+            contains: word,
+            mode: "insensitive",
+          },
+        })),
+      })),
+    });
+  }
+
+  // 🎛 dynamic filters
+  if (Object.keys(filterValues).length > 0) {
+    andConditions.push({
+      AND: Object.keys(filterValues).map((key) => ({
+        [key]: {
+          equals: filterValues[key],
+        },
+      })),
+    });
+  }
+
+  const whereConditions: Prisma.ProductWhereInput =
+    andConditions.length > 0 ? { AND: andConditions } : {};
+
+  // 📦 fetch full products
   const products = await prisma.product.findMany({
-    where: { brandId },
-    ...prismaQuery,
+    where: whereConditions,
     include: {
       brand: true,
       category: true,
@@ -305,8 +617,16 @@ const getProductByBrand = async (
       variants: {
         include: {
           attributes: true,
-          cartItems: true,
-          orderItems: true,
+          orderItems: {
+            where: {
+              order: {
+                status: "COMPLETED", // ✅ accuracy
+              },
+            },
+            select: {
+              quantity: true,
+            },
+          },
         },
       },
       ingredients: {
@@ -327,46 +647,95 @@ const getProductByBrand = async (
       },
       skinTypes: {
         include: {
-          skinType: {
-            select: { name: true },
-          },
+          skinType: { select: { name: true } },
         },
       },
       concerns: {
         include: {
-          skinConcern: {
-            select: { name: true },
-          },
+          skinConcern: { select: { name: true } },
         },
       },
     },
   });
 
-  return products;
+  // 🔥 calculate & sort by real sales
+  const bestSelling = products
+    .map((product) => {
+      const totalSold = product.variants.reduce((pSum, variant) => {
+        return (
+          pSum +
+          variant.orderItems.reduce((vSum, item) => vSum + item.quantity, 0)
+        );
+      }, 0);
+
+      return { ...product, totalSold };
+    })
+    .filter((p) => p.totalSold > 0)
+    .sort((a, b) => b.totalSold - a.totalSold);
+
+  // 📄 pagination after accurate sorting
+  const paginatedData = bestSelling.slice(skip, skip + limit);
+
+  return {
+    meta: {
+      page,
+      limit,
+      total: bestSelling.length,
+    },
+    data: paginatedData,
+  };
 };
 
-const getProductBySkinType = async (
-  query: Record<string, string>,
-  skinTypeId: string,
+const getProductByBrand = async (
+  filters: Record<string, any>,
+  options: Record<string, any>,
+  brandId: string,
 ) => {
-  const prismaQueryBuilder = new PrismaQueryBuilder(query)
-    .search(["name", "description", " shortDesc", "longDesc", "slug"])
-    .filter()
-    .sort()
-    .paginate();
+  const { page, limit, skip, sortBy, sortOrder } =
+    paginationHelper.calculatePagination(options);
 
-  const prismaQuery = prismaQueryBuilder.build();
+  const { searchTerm, ...filterValues } = filters;
 
-  const [products, meta] = await Promise.all([
-    prisma.product.findMany({
-      where: {
-        skinTypes: {
-          some: {
-            skinTypeId,
+  const andConditions: Prisma.ProductWhereInput[] = [];
+  if (searchTerm) {
+    const searchWords = searchTerm.trim().split(/\s+/);
+
+    andConditions.push({
+      AND: searchWords.map((word: any) => ({
+        OR: productSearchAbleFields.map((field) => ({
+          [field]: {
+            contains: word,
+            mode: "insensitive",
           },
+        })),
+      })),
+    });
+  }
+
+  if (Object.keys(filterValues).length > 0) {
+    andConditions.push({
+      AND: Object.keys(filterValues).map((key) => ({
+        [key]: {
+          equals: filterValues[key],
         },
+      })),
+    });
+  }
+
+  const whereConditions: Prisma.ProductWhereInput =
+    andConditions.length > 0
+      ? {
+          AND: [...andConditions, { brandId }],
+        }
+      : { brandId };
+
+  const [products, total] = await Promise.all([
+    prisma.product.findMany({
+      skip,
+      take: limit,
+      where: {
+        AND: whereConditions,
       },
-      ...prismaQuery,
       include: {
         brand: true,
         category: true,
@@ -409,38 +778,185 @@ const getProductBySkinType = async (
           },
         },
       },
+      orderBy: {
+        [sortBy]: sortOrder,
+      },
     }),
-    prismaQueryBuilder.getMeta(prisma.product),
+    prisma.product.count({
+      where: whereConditions,
+    }),
   ]);
 
   return {
     data: products,
-    meta,
+    meta: {
+      page,
+      limit,
+      total,
+    },
+  };
+};
+
+const getProductBySkinType = async (
+  filters: Record<string, any>,
+  options: Record<string, any>,
+  skinTypeId: string,
+) => {
+  const { page, limit, skip, sortBy, sortOrder } =
+    paginationHelper.calculatePagination(options);
+
+  const { searchTerm, ...filterValues } = filters;
+
+  const andConditions: Prisma.ProductWhereInput[] = [];
+  if (searchTerm) {
+    const searchWords = searchTerm.trim().split(/\s+/);
+
+    andConditions.push({
+      AND: searchWords.map((word: any) => ({
+        OR: productSearchAbleFields.map((field) => ({
+          [field]: {
+            contains: word,
+            mode: "insensitive",
+          },
+        })),
+      })),
+    });
+  }
+
+  if (Object.keys(filterValues).length > 0) {
+    andConditions.push({
+      AND: Object.keys(filterValues).map((key) => ({
+        [key]: {
+          equals: filterValues[key],
+        },
+      })),
+    });
+  }
+
+  const whereConditions: Prisma.ProductWhereInput =
+    andConditions.length > 0
+      ? {
+          AND: [...andConditions, { skinTypes: { some: { skinTypeId } } }],
+        }
+      : { skinTypes: { some: { skinTypeId } } };
+
+  const [products, total] = await Promise.all([
+    prisma.product.findMany({
+      skip,
+      take: limit,
+      where: {
+        AND: whereConditions,
+      },
+      include: {
+        brand: true,
+        category: true,
+        reviews: true,
+        variants: {
+          include: {
+            attributes: true,
+            cartItems: true,
+            orderItems: true,
+          },
+        },
+        ingredients: {
+          include: {
+            ingredient: {
+              select: {
+                name: true,
+                description: true,
+                benefits: true,
+                sideEffects: true,
+                usage: true,
+                precautions: true,
+                safetyLevel: true,
+                isActive: true,
+              },
+            },
+          },
+        },
+        skinTypes: {
+          include: {
+            skinType: {
+              select: { name: true },
+            },
+          },
+        },
+        concerns: {
+          include: {
+            skinConcern: {
+              select: { name: true },
+            },
+          },
+        },
+      },
+      orderBy: {
+        [sortBy]: sortOrder,
+      },
+    }),
+    prisma.product.count({
+      where: whereConditions,
+    }),
+  ]);
+
+  return {
+    data: products,
+    meta: {
+      page,
+      limit,
+      total,
+    },
   };
 };
 
 const getProductBySkinConcern = async (
-  query: Record<string, string>,
+  filters: Record<string, any>,
+  options: Record<string, any>,
   skinConcernId: string,
 ) => {
-  const prismaQueryBuilder = new PrismaQueryBuilder(query)
-    .search(["name", "description", " shortDesc", "longDesc", "slug"])
-    .filter()
-    .sort()
-    .paginate();
+  const { page, limit, skip, sortBy, sortOrder } =
+    paginationHelper.calculatePagination(options);
 
-  const prismaQuery = prismaQueryBuilder.build();
+  const { searchTerm, ...filterValues } = filters;
 
-  const [products, meta] = await Promise.all([
-    prisma.product.findMany({
-      where: {
-        concerns: {
-          some: {
-            skinConcernId,
+  const andConditions: Prisma.ProductWhereInput[] = [];
+  if (searchTerm) {
+    const searchWords = searchTerm.trim().split(/\s+/);
+
+    andConditions.push({
+      AND: searchWords.map((word: any) => ({
+        OR: productSearchAbleFields.map((field) => ({
+          [field]: {
+            contains: word,
+            mode: "insensitive",
           },
+        })),
+      })),
+    });
+  }
+  if (Object.keys(filterValues).length > 0) {
+    andConditions.push({
+      AND: Object.keys(filterValues).map((key) => ({
+        [key]: {
+          equals: filterValues[key],
         },
+      })),
+    });
+  }
+
+  const whereConditions: Prisma.ProductWhereInput =
+    andConditions.length > 0
+      ? {
+          AND: [...andConditions, { concerns: { some: { skinConcernId } } }],
+        }
+      : { concerns: { some: { skinConcernId } } };
+
+  const [products, total] = await Promise.all([
+    prisma.product.findMany({
+      skip,
+      take: limit,
+      where: {
+        AND: whereConditions,
       },
-      ...prismaQuery,
       include: {
         brand: true,
         category: true,
@@ -483,13 +999,22 @@ const getProductBySkinConcern = async (
           },
         },
       },
+      orderBy: {
+        [sortBy]: sortOrder,
+      },
     }),
-    prismaQueryBuilder.getMeta(prisma.product),
+    prisma.product.count({
+      where: whereConditions,
+    }),
   ]);
 
   return {
     data: products,
-    meta,
+    meta: {
+      page,
+      limit,
+      total,
+    },
   };
 };
 const updateProduct = async (id: string, productData: IProduct) => {
@@ -542,4 +1067,5 @@ export const ProductService = {
   getProductBySkinType,
   getProductBySkinConcern,
   getProductByCetegory,
+  getBestSellingProducts,
 };

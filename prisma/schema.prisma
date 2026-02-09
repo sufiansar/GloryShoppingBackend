@@ -12,5 +12,4 @@
 
     datasource db {
       provider = "postgresql"
-   
     }

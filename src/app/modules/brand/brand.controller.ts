@@ -4,6 +4,9 @@ import { Multer } from "multer";
 import { sendResponse } from "../../utility/sendResponse";
 import { BrandService } from "./brand.service";
 import httpStatus from "http-status";
+import { CategoryFilterableFields } from "../categorys/category.filterableField";
+import { BrandFilterableFields } from "./brand.constant";
+import pick from "../../utility/pick";
 
 const createBrand = catchAsync(async (req: Request, res: Response) => {
   const data = req.body.data ? JSON.parse(req.body.data) : { ...req.body };
@@ -28,16 +31,18 @@ const createBrand = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAllBrands = catchAsync(async (req: Request, res: Response) => {
-  const result = await BrandService.getAllBrands(
-    req.query as Record<string, string>
-  );
+  const filters = pick(req.query, BrandFilterableFields);
+  const options = pick(req.query, ["limit", "page", "sortBy", "sortOrder"]);
+  const result = await BrandService.getAllBrands(filters, options);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "Brands retrieved successfully",
-    data: result.data,
-    meta: result.meta,
+    data: {
+      data: result.data,
+      meta: result.meta,
+    },
   });
 });
 
@@ -53,6 +58,29 @@ const getBrandById = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getBrandBySlugWithProducts = catchAsync(
+  async (req: Request, res: Response) => {
+    const { slug } = req.params;
+    const filters = pick(req.query, BrandFilterableFields);
+    const options = pick(req.query, ["limit", "page", "sortBy", "sortOrder"]);
+
+    const result = await BrandService.getBrandBySlugWithProducts(
+      filters,
+      options,
+      slug,
+    );
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Brand with products retrieved successfully",
+      data: {
+        data: result.data,
+        meta: result.meta,
+      },
+    });
+  },
+);
 const updateBrand = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const logoUrl = req.file?.path;
@@ -82,6 +110,7 @@ const deleteBrand = catchAsync(async (req: Request, res: Response) => {
 export const BrandController = {
   createBrand,
   getAllBrands,
+  getBrandBySlugWithProducts,
   getBrandById,
   updateBrand,
   deleteBrand,

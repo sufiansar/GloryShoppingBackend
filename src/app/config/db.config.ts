@@ -4,11 +4,11 @@ import path from "path";
 dotenv.config({ path: path.join(process.cwd(), ".env") });
 
 export default {
-  node_env: process.env.NODE_ENV,
+  node_env: process.env.NODE_ENV || "production",
   port: process.env.PORT,
   database_url: process.env.DATABASE_URL,
   bcryptJs_salt: process.env.BCRYTPJS_SALT,
-  frontEnd_url: process.env.FONTEND_URL,
+  frontEnd_url: process.env.FRONTEND_URL,
 
   superAdmin: {
     superAdmin_name: process.env.SUPERADMIN_NAME,
@@ -26,7 +26,6 @@ export default {
     refreshToken_secret: process.env.REFRESHTOKEN_SECRET,
     refreshToken_expiresIn: process.env.REFRESHTOKEN_EXPIRESIN,
   },
-  openRouter_api_key: process.env.OPENROUTER_API_KEY,
   stripe: {
     stripe_secret_key: process.env.STRIPE_SECRET_KEY,
     stripe_webhook_secret: process.env.STRIPE_WEBHOOK_SECRET,

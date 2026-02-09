@@ -3,6 +3,8 @@ import { catchAsync } from "../../utility/catchAsync";
 import { sendResponse } from "../../utility/sendResponse";
 import httpStatus from "http-status";
 import { CategoryService } from "./category.service";
+import pick from "../../utility/pick";
+import { CategoryFilterableFields } from "./category.filterableField";
 
 const createCategory = catchAsync(async (req: Request, res: Response) => {
   const categoryData = req.body;
@@ -17,16 +19,18 @@ const createCategory = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAllCategories = catchAsync(async (req: Request, res: Response) => {
-  const result = await CategoryService.getAllCategories(
-    req.query as Record<string, string>,
-  );
+  const filters = pick(req.query, CategoryFilterableFields);
+  const options = pick(req.query, ["limit", "page", "sortBy", "sortOrder"]);
+  const result = await CategoryService.getAllCategories(filters, options);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "Categories retrieved successfully",
-    data: result.data,
-    meta: result.meta,
+    data: {
+      data: result.data,
+      meta: result.meta,
+    },
   });
 });
 
@@ -45,26 +49,44 @@ const getSingleCategory = catchAsync(async (req: Request, res: Response) => {
 const getAllProductByCategoryBySlug = catchAsync(
   async (req: Request, res: Response) => {
     const slug = req.params.slug;
-    const result = await CategoryService.getAllProductByCategoryBySlug(slug);
+    const filters = pick(req.query, CategoryFilterableFields);
+    const options = pick(req.query, ["limit", "page", "sortBy", "sortOrder"]);
+    const result = await CategoryService.getAllProductByCategoryBySlug(
+      filters,
+      options,
+      slug,
+    );
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
       message: "Products retrieved successfully",
-      data: result,
+      data: {
+        data: result.data,
+        meta: result.meta,
+      },
     });
   },
 );
 
 const getProductByCetegory = catchAsync(async (req: Request, res: Response) => {
   const categoryId = req.params.id;
-  const result = await CategoryService.getProductByCetegory(categoryId);
+  const filters = pick(req.query, CategoryFilterableFields);
+  const options = pick(req.query, ["limit", "page", "sortBy", "sortOrder"]);
+  const result = await CategoryService.getProductByCetegory(
+    filters,
+    options,
+    categoryId,
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "Products retrieved successfully",
-    data: result,
+    data: {
+      data: result.data,
+      meta: result.meta,
+    },
   });
 });
 

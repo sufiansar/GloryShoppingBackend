@@ -43,13 +43,15 @@ const getAllVariants = async (query: Record<string, string>) => {
   const prismaQueryBuilder = new PrismaQueryBuilder(query)
     .filter()
     .sort()
-    .paginate()
-    .fields();
+    .paginate();
 
   const prismaQuery = prismaQueryBuilder.build();
 
   const [variants, meta] = await Promise.all([
-    prisma.productVariant.findMany(prismaQuery),
+    prisma.productVariant.findMany({
+      ...prismaQuery,
+      orderBy: { createdAt: "desc" },
+    }),
     prismaQueryBuilder.getMeta(prisma.productVariant),
   ]);
 

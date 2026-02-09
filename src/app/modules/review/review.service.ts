@@ -53,6 +53,7 @@ const getALlReviews = async (query: Record<string, string>) => {
   const [reviews, meta] = await Promise.all([
     prisma.review.findMany({
       ...prismaQueryBuilt,
+
       include: {
         user: true,
         product: {
@@ -62,6 +63,7 @@ const getALlReviews = async (query: Record<string, string>) => {
           },
         },
       },
+      orderBy: { createdAt: "desc" },
     }),
     prismaQuery.getMeta(prisma.review),
   ]);

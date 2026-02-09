@@ -3,6 +3,8 @@ import { IngredientService } from "./Ingredient.service";
 import httpStatus from "http-status";
 import { sendResponse } from "../../utility/sendResponse";
 import { Request, Response } from "express";
+import { IngredientFilterableFields } from "./ingrediant.constant";
+import pick from "../../utility/pick";
 
 const createIngredient = catchAsync(async (req: Request, res: Response) => {
   const data = req.body;
@@ -16,16 +18,18 @@ const createIngredient = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAllIngredients = catchAsync(async (req: Request, res: Response) => {
-  const result = await IngredientService.getAllIngredients(
-    req.query as Record<string, string>
-  );
+  const filters = pick(req.query, IngredientFilterableFields);
+  const options = pick(req.query, ["limit", "page", "sortBy", "sortOrder"]);
+  const result = await IngredientService.getAllIngredients(filters, options);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "Ingredients retrieved successfully",
-    data: result.data,
-    meta: result.meta,
+    data: {
+      data: result.data,
+      meta: result.meta,
+    },
   });
 });
 
@@ -71,7 +75,7 @@ const joinIngredientsToProduct = catchAsync(
     const { productId, ingredientIds } = req.body;
     const result = await IngredientService.joinIngredientsToProduct(
       ingredientIds,
-      productId
+      productId,
     );
 
     sendResponse(res, {
@@ -80,7 +84,7 @@ const joinIngredientsToProduct = catchAsync(
       message: "Ingredients joined to product successfully",
       data: result,
     });
-  }
+  },
 );
 
 export const IngredientController = {

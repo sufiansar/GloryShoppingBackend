@@ -4,6 +4,9 @@ import { sendResponse } from "../../utility/sendResponse";
 
 import httpStatus from "http-status";
 import { ProductService } from "./product.service";
+import pick from "../../utility/pick";
+import { paginationableFields } from "../../utility/constant";
+import { productFilterableFields } from "./product.filterableField";
 
 const createProduct = catchAsync(async (req: Request, res: Response) => {
   const data = req.body.data ? JSON.parse(req.body.data) : { ...req.body };
@@ -19,18 +22,41 @@ const createProduct = catchAsync(async (req: Request, res: Response) => {
   });
 });
 const getAllProducts = catchAsync(async (req: Request, res: Response) => {
-  const result = await ProductService.getAllProducts(
-    req.query as Record<string, string>,
-  );
+  const filters = pick(req.query, productFilterableFields);
+  const options = pick(req.query, paginationableFields);
+  const result = await ProductService.getAllProducts(filters, options);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "Products retrieved successfully",
-    data: result.data,
-    meta: result.meta,
+    data: {
+      data: result.data,
+      meta: result.meta,
+    },
   });
 });
+
+const getBestSellingProducts = catchAsync(
+  async (req: Request, res: Response) => {
+    const filters = pick(req.query, productFilterableFields);
+    const options = pick(req.query, paginationableFields);
+    const result = await ProductService.getBestSellingProducts(
+      filters,
+      options,
+    );
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Products retrieved successfully",
+      data: {
+        data: result.data,
+        meta: result.meta,
+      },
+    });
+  },
+);
 
 const getProductById = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -57,9 +83,15 @@ const getProductBySlug = catchAsync(async (req: Request, res: Response) => {
   });
 });
 const getProductByBrand = catchAsync(async (req: Request, res: Response) => {
+  const filters = pick(req.query, productFilterableFields);
+  const options = pick(req.query, paginationableFields);
   const { brandId } = req.params;
-  const query = req.query as Record<string, string>;
-  const result = await ProductService.getProductByBrand(query, brandId);
+
+  const result = await ProductService.getProductByBrand(
+    filters,
+    options,
+    brandId,
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -70,8 +102,14 @@ const getProductByBrand = catchAsync(async (req: Request, res: Response) => {
 });
 const getProductBySkinType = catchAsync(async (req: Request, res: Response) => {
   const { skinTypeId } = req.params;
-  const query = req.query as Record<string, string>;
-  const result = await ProductService.getProductBySkinType(query, skinTypeId);
+  const filters = pick(req.query, productFilterableFields);
+  const options = pick(req.query, paginationableFields);
+
+  const result = await ProductService.getProductBySkinType(
+    filters,
+    options,
+    skinTypeId,
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -87,9 +125,11 @@ const getProductBySkinType = catchAsync(async (req: Request, res: Response) => {
 const getProductBySkinConcern = catchAsync(
   async (req: Request, res: Response) => {
     const { skinConcernId } = req.params;
-    const query = req.query as Record<string, string>;
+    const filters = pick(req.query, productFilterableFields);
+    const options = pick(req.query, paginationableFields);
     const result = await ProductService.getProductBySkinConcern(
-      query,
+      filters,
+      options,
       skinConcernId,
     );
 
@@ -105,9 +145,16 @@ const getProductBySkinConcern = catchAsync(
   },
 );
 const getProductByCetegory = catchAsync(async (req: Request, res: Response) => {
+  const filters = pick(req.query, ["status", "paymentStatus"]);
+  const options = pick(req.query, paginationableFields);
+
   const { categoryId } = req.params;
-  const query = req.query as Record<string, string>;
-  const result = await ProductService.getProductByCetegory(query, categoryId);
+
+  const result = await ProductService.getProductByCetegory(
+    filters,
+    options,
+    categoryId,
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

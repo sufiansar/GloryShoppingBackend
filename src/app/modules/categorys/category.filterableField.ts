@@ -1,5 +1,7 @@
-export const categoryFilters = {
-  isActive: (value: string) => ({
-    isActive: value === "true",
-  }),
-};
+export const CategoryFilterableFields = [
+  "createdAt",
+  "updatedAt",
+  "searchTerm",
+];
+
+export const CategorySearchAbleFields = ["name", "description"];

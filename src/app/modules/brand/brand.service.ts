@@ -1,7 +1,10 @@
+import { Prisma } from "../../../generated/prisma";
 import { deleteImageFromCLoudinary } from "../../config/cloudinary";
 import { prisma } from "../../config/prisma";
+import { paginationHelper } from "../../utility/paginationField";
 import { PrismaQueryBuilder } from "../../utility/queryBuilder";
 import { generateSlug } from "../../utility/slugGenerate";
+import { BrandSearchAbleFields } from "./brand.constant";
 import { ICreateBrand } from "./brand.interface";
 
 const createBrand = async (brand: Partial<ICreateBrand>) => {
@@ -25,23 +28,142 @@ const createBrand = async (brand: Partial<ICreateBrand>) => {
   return brandCreated;
 };
 
-const getAllBrands = async (query: Record<string, string>) => {
-  const prismaQueryBuilder = new PrismaQueryBuilder(query)
-    .filter()
-    .search(["name"])
-    .sort()
-    .paginate();
+const getAllBrands = async (
+  filters: Record<string, any>,
+  options: Record<string, any>,
+) => {
+  const { page, limit, skip, sortBy, sortOrder } =
+    paginationHelper.calculatePagination(options);
 
-  const prismaQuery = prismaQueryBuilder.build();
+  const { searchTerm, ...filterValues } = filters;
+  const andConditions: Prisma.BrandWhereInput[] = [];
+  if (searchTerm) {
+    andConditions.push({
+      OR: [
+        {
+          name: {
+            contains: searchTerm,
+            mode: "insensitive",
+          },
+        },
+      ],
+    });
+  }
 
-  const [brands, meta] = await Promise.all([
-    prisma.brand.findMany(prismaQuery),
-    prismaQueryBuilder.getMeta(prisma.brand),
-  ]);
+  if (Object.keys(filterValues).length > 0) {
+    andConditions.push({
+      AND: Object.keys(filterValues).map((key) => ({
+        [key]: {
+          equals: filterValues[key],
+        },
+      })),
+    });
+  }
+
+  const whereConditions: Prisma.BrandWhereInput =
+    andConditions.length > 0
+      ? {
+          AND: andConditions,
+        }
+      : {};
+
+  const brands = await prisma.brand.findMany({
+    where: whereConditions,
+    skip,
+    take: limit,
+    orderBy: {
+      [sortBy]: sortOrder,
+    },
+  });
+
+  const total = await prisma.brand.count({
+    where: whereConditions,
+  });
 
   return {
     data: brands,
-    meta,
+    meta: {
+      page,
+      limit,
+      total,
+    },
+  };
+};
+
+const getBrandBySlugWithProducts = async (
+  filter: Record<string, any>,
+  options: Record<string, any>,
+  slug: string,
+) => {
+  const { page, limit, skip, sortBy, sortOrder } =
+    paginationHelper.calculatePagination(options);
+
+  const { searchTerm, ...filterValues } = filter;
+  const andConditions: Prisma.ProductWhereInput[] = [];
+  if (searchTerm) {
+    const searchWords = searchTerm.trim().split(/\s+/);
+
+    andConditions.push({
+      AND: searchWords.map((word: any) => ({
+        OR: BrandSearchAbleFields.map((field) => ({
+          [field]: {
+            contains: word,
+            mode: "insensitive",
+          },
+        })),
+      })),
+    });
+  }
+
+  if (Object.keys(filterValues).length > 0) {
+    andConditions.push({
+      AND: Object.keys(filterValues).map((key) => ({
+        [key]: {
+          equals: filterValues[key],
+        },
+      })),
+    });
+  }
+
+  const whereConditions: Prisma.ProductWhereInput =
+    andConditions.length > 0
+      ? {
+          AND: andConditions,
+        }
+      : {};
+
+  const brandWithProducts = await prisma.brand.findUnique({
+    where: { slug },
+    include: {
+      products: {
+        where: whereConditions,
+        skip,
+        take: limit,
+        orderBy: {
+          [sortBy]: sortOrder,
+        },
+      },
+    },
+  });
+
+  if (!brandWithProducts) {
+    throw new Error("Brand not found");
+  }
+
+  const total = await prisma.product.count({
+    where: {
+      brandId: brandWithProducts.id,
+      ...whereConditions,
+    },
+  });
+
+  return {
+    data: brandWithProducts,
+    meta: {
+      page,
+      limit,
+      total,
+    },
   };
 };
 
@@ -93,4 +215,5 @@ export const BrandService = {
   getBrandById,
   updateBrand,
   deleteBrand,
+  getBrandBySlugWithProducts,
 };

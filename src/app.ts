@@ -5,12 +5,13 @@ import router from "./app/routes/router";
 import cookieParser from "cookie-parser";
 import globalErrorHandler from "./app/middlewares/globalErrorHandler";
 import notFound from "./app/middlewares/notFound";
+import dbConfig from "./app/config/db.config";
 
 const app: Application = express();
 
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: dbConfig.frontEnd_url || "http://localhost:3000",
     credentials: true,
   }),
 );
