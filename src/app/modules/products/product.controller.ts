@@ -72,8 +72,8 @@ const getProductById = catchAsync(async (req: Request, res: Response) => {
 
 const getProductBySlug = catchAsync(async (req: Request, res: Response) => {
   const { slug } = req.params;
-  const query = req.query as Record<string, string>;
-  const result = await ProductService.getProductBySlug(query, slug);
+  const result = await ProductService.getProductBySlug(slug);
+  console.log(result);
   console.log(slug);
   sendResponse(res, {
     statusCode: httpStatus.OK,

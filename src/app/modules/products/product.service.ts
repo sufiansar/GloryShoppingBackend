@@ -456,20 +456,11 @@ const getProductByCetegory = async (
 //   return product;
 // };
 
-const getProductBySlug = async (
-  query: Record<string, string>,
-  slug: string,
-) => {
-  const prismaQueryBuilder = new PrismaQueryBuilder(query).filter();
-
-  const prismaQuery = prismaQueryBuilder.build();
-
-  delete prismaQuery.take;
-  delete prismaQuery.skip;
-
-  const product = await prisma.product.findFirst({
-    where: { slug },
-    ...prismaQuery,
+const getProductBySlug = async (slug: string) => {
+  const product = await prisma.product.findUnique({
+    where: {
+      slug, // only unique field
+    },
     include: {
       brand: true,
       category: true,
@@ -512,7 +503,6 @@ const getProductBySlug = async (
         },
       },
     },
-    orderBy: { createdAt: "desc" },
   });
 
   return product;
